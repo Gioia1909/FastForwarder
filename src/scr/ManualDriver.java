@@ -10,6 +10,13 @@ public class ManualDriver extends Controller {
     private volatile boolean recording = false;
     private float clutch = 0;
     private int gear = 1;
+    private long lastSaveTime = 0;
+private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
+
+private double lastSteering = 0;
+private double lastSpeed = 0;
+private double lastAngle = 0;
+
 
     final int[] gearUp = {5000, 6000, 6000, 6500, 7000, 0};
     final int[] gearDown = {0, 2500, 3000, 3000, 3500, 3500};
@@ -82,39 +89,57 @@ public class ManualDriver extends Controller {
 
     //  Scrivi nel CSV solo se recording è attivo
     if (recording) {
-        try {
-            File file = new File("dataset.csv");
-            boolean fileExists = file.exists();
-            boolean fileIsEmpty = file.length() == 0;
-
+        long currentTime = System.currentTimeMillis();
+        boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
+    
+        double steering = action.steering;
+        speed = sensors.getSpeed(); // senza "double"
+        double angle = sensors.getAngleToTrackAxis();
+    
+        boolean significantChange =
+                Math.abs(steering - lastSteering) > 0.05 ||
+                Math.abs(speed - lastSpeed) > 2.0 ||
+                Math.abs(angle - lastAngle) > 0.02;
+    
+        if (timeElapsed && significantChange) {
+            lastSaveTime = currentTime;
+            lastSteering = steering;
+            lastSpeed = speed;
+            lastAngle = angle;
+    
+            try {
+                File file = new File("dataset.csv");
+                boolean fileExists = file.exists();
+                boolean fileIsEmpty = file.length() == 0;
+    
                 try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
                     if (!fileExists || fileIsEmpty) {
                         bw.write("TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
                     }
-
+    
                     double[] trackSensors = sensors.getTrackEdgeSensors();
-                    double speedX = sensors.getSpeed(); // oppure sensors.getSpeedX()
-
+    
                     bw.write(
                         trackSensors[8] + "," +
                         trackSensors[9] + "," +
                         trackSensors[10] + "," +
                         sensors.getTrackPosition() + "," +
                         sensors.getAngleToTrackAxis() + "," +
-                        speedX + "," +
+                        speed + "," +
                         action.accelerate + "," +
                         action.brake + "," +
-                        action.steering + "\n"
+                        steering + "\n"
                     );
                 }
-
+    
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-
-        return action;
     }
+    return action;
+    }    
+    
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;
