@@ -57,76 +57,59 @@ public class ManualDriver extends Controller {
     }
 
     @Override
-    public Action control(SensorModel sensors) {
-        Action action = new Action();
+public Action control(SensorModel sensors) {
+    Action action = new Action();
 
-        action.accelerate = accel ? 1.0 : 0.0;
-        action.brake = brake ? 0.5 : 0.0;
-        action.steering = right ? -0.2f : (left ? 0.2f : 0.0f);
+    // Costruisci l'azione da tastiera (o da IA, se applicato)
+    action.accelerate = accel ? 1.0 : 0.0;
+    action.brake = brake ? 0.5 : 0.0;
+    action.steering = right ? -0.2f : (left ? 0.2f : 0.0f);
 
-        if (gear < -1) gear = -1;
-        if (gear > 6) gear = 6;
-        action.gear = gear;
+    if (gear < -1) gear = -1;
+    if (gear > 6) gear = 6;
+    action.gear = gear;
 
-        action.clutch = clutching(sensors, clutch);
+    action.clutch = clutching(sensors, clutch);
 
-        // Salvataggio dati
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("dataset.csv", true))) {
+    // ✅ Scrivi nel CSV solo se recording è attivo
+    if (recording) {
+        try {
+            File file = new File("dataset.csv");
+            boolean fileExists = file.exists();
+            boolean fileIsEmpty = file.length() == 0;
 
-            double[] trackSensors = sensors.getTrackEdgeSensors();
-            double speedX = sensors.getSpeed(); // o sensors.getSpeedX() se disponibile
-        
-            bw.write(
-                trackSensors[8] + "," +     // sinistra
-                trackSensors[9] + "," +     // centro
-                trackSensors[10] + "," +    // destra
-                sensors.getTrackPosition() + "," +
-                sensors.getAngleToTrackAxis() + "," +
-                speedX + "," +
-                action.accelerate + "," +
-                action.brake + "," +
-                action.steering + "\n"
-            );
-        
-        } catch (IOException e) {
-            e.printStackTrace();
-        // Scrittura condizionata allo switch
-        if (recording) {
-            try {
-                File file = new File("dataset.csv");
-                boolean fileExists = file.exists();
-                boolean fileIsEmpty = file.length() == 0;
-
-                BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
-
+            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+                // Scrivi intestazione se necessario
                 if (!fileExists || fileIsEmpty) {
-                    bw.write("TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering,Gear\n");
+                    bw.write("TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
                 }
 
+                // Raccogli i dati dai sensori
                 double[] trackSensors = sensors.getTrackEdgeSensors();
-    double speedX = sensors.getSpeed(); // o sensors.getSpeedX() se disponibile
+                double speedX = sensors.getSpeed(); // oppure sensors.getSpeedX() se esiste
 
-    bw.write(
-        trackSensors[8] + "," +     // sinistra
-        trackSensors[9] + "," +     // centro
-        trackSensors[10] + "," +    // destra
-        sensors.getTrackPosition() + "," +
-        sensors.getAngleToTrackAxis() + "," +
-        speedX + "," +
-        action.accelerate + "," +
-        action.brake + "," +
-        action.steering + "\n"
-    );
-
-                bw.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+                // Scrivi riga dati
+                bw.write(
+                    trackSensors[8] + "," +
+                    trackSensors[9] + "," +
+                    trackSensors[10] + "," +
+                    sensors.getTrackPosition() + "," +
+                    sensors.getAngleToTrackAxis() + "," +
+                    speedX + "," +
+                    action.accelerate + "," +
+                    action.brake + "," +
+                    action.steering + "\n"
+                );
             }
-        }
-        
 
-        return action;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
+    return action;
+}
+
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;
