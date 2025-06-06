@@ -53,7 +53,7 @@ public class ManualDriver extends Controller {
         Action action = new Action();
 
         action.accelerate = accel ? 1.0 : 0.0;
-        action.brake = brake ? 1.0 : 0.0;
+        action.brake = brake ? 0.5 : 0.0;
         action.steering = right ? -0.2f : (left ? 0.2f : 0.0f);
 
         // Gestione marce
@@ -65,7 +65,19 @@ public class ManualDriver extends Controller {
         action.clutch = clutching(sensors, clutch);
 
         // Salvataggio dati
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter("dataset.csv", true))) {
+        try {
+            File file = new File("dataset.csv");
+            boolean fileExists = file.exists();
+            boolean fileIsEmpty = file.length() == 0;
+        
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file, true));
+        
+            if (!fileExists || fileIsEmpty) {
+                // Scrivi intestazione
+                bw.write("TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering,Gear\n");
+            }
+        
+            // Scrivi i dati
             bw.write(
                 sensors.getTrackPosition() + "," +
                 sensors.getAngleToTrackAxis() + "," +
@@ -75,9 +87,11 @@ public class ManualDriver extends Controller {
                 action.steering + "," +
                 action.gear + "\n"
             );
+        
+            bw.close();
         } catch (IOException e) {
             e.printStackTrace();
-        }
+        } 
 
         return action;
     }
