@@ -187,45 +187,39 @@ public class SimpleDriver extends Controller {
 			return action;
 		}
 
-		else //Auto non Bloccata
-		{
-			// Calcolo del comando di accelerazione/frenata
-			float accel_and_brake = getAccel(sensors);
+		else // Auto non bloccata
+{
+    double[] input = {
+        sensors.getTrackEdgeSensors()[8],
+        sensors.getTrackEdgeSensors()[9],
+        sensors.getTrackEdgeSensors()[10],
+        sensors.getTrackPosition(),
+        sensors.getAngleToTrackAxis(),
+        sensors.getSpeed()
+    };
 
-			// Calcolare marcia da utilizzare
-			int gear = getGear(sensors);
+    int predictedSteering = classifier.predictSteering(input);
+    int predictedAccel = classifier.predictAccelerate(input);
+    int predictedBrake = classifier.predictBrake(input);
 
-			// Calcolo angolo di sterzata
-			float steer = getSteer(sensors);
+    int gear = getGear(sensors);
 
-			// Normalizzare lo sterzo
-			if (steer < -1)
-				steer = -1;
-			if (steer > 1)
-				steer = 1;
+    float steer = (float) predictedSteering;
+    float accel = (float) predictedAccel;
+    float brake = (float) predictedBrake;
 
-			// Impostare accelerazione e frenata dal comando congiunto accelerazione/freno
-			float accel, brake;
-			if (accel_and_brake > 0) {
-				accel = accel_and_brake;
-				brake = 0;
-			} else {
-				accel = 0;
+    clutch = clutching(sensors, clutch);
 
-				// Applicare l'ABS al freno
-				brake = filterABS(sensors, -accel_and_brake);
-			}
-			clutch = clutching(sensors, clutch);
+    Action action = new Action();
+    action.gear = gear;
+    action.steering = steer;
+    action.accelerate = accel;
+    action.brake = brake;
+    action.clutch = clutch;
 
-			// Costruire una variabile CarControl e restituirla
-			Action action = new Action();
-			action.gear = gear;
-			action.steering = steer;
-			action.accelerate = accel;
-			action.brake = brake;
-			action.clutch = clutch;
-			return action;
-		}
+    return action;
+}
+
 	}
 
 	private float filterABS(SensorModel sensors, float brake) {
