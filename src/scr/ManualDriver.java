@@ -9,8 +9,11 @@ public class ManualDriver extends Controller {
     private boolean accel = false, brake = false, left = false, right = false;
     private float clutch = 0;
 
+    // Costanti cambio automatico
+    final int[] gearUp = {5000, 6000, 6000, 6500, 7000, 0};
+    final int[] gearDown = {0, 2500, 3000, 3000, 3500, 3500};
+
     public ManualDriver() {
-        // Finestra invisibile per intercettare i tasti
         JFrame frame = new JFrame("Manual Driver Control");
         frame.setSize(200, 100);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -45,7 +48,16 @@ public class ManualDriver extends Controller {
         action.accelerate = accel ? 1 : 0;
         action.brake = brake ? 1 : 0;
         action.steering = left ? -1 : (right ? 1 : 0);
-        action.gear = 1;
+
+        // Cambio automatico
+        int gear = sensors.getGear();
+        double rpm = sensors.getRPM();
+        if (gear < 1) gear = 1;
+        if (gear < 6 && rpm >= gearUp[gear - 1]) gear++;
+        else if (gear > 1 && rpm <= gearDown[gear - 1]) gear--;
+        action.gear = gear;
+
+        // Frizione dinamica
         action.clutch = clutching(sensors, clutch);
 
         // Salvataggio dati
@@ -57,7 +69,8 @@ public class ManualDriver extends Controller {
                 sensors.getSpeed() + "," +
                 action.accelerate + "," +
                 action.brake + "," +
-                action.steering + "\n"
+                action.steering + "," +
+                action.gear + "\n"
             );
         } catch (IOException e) {
             e.printStackTrace();
@@ -66,6 +79,44 @@ public class ManualDriver extends Controller {
         return action;
     }
 
+    private float clutching(SensorModel sensors, float clutch) {
+        final float clutchMax = 0.5f;
+        final float clutchDelta = 0.05f;
+        final float clutchMaxTime = 1.5f;
+        final float clutchDec = 0.01f;
+        final float clutchDeltaTime = 0.02f;
+        final float clutchDeltaRaced = 10f;
+        final float clutchMaxModifier = 1.3f;
+
+        float maxClutch = clutchMax;
+
+        if (sensors.getCurrentLapTime() < clutchDeltaTime && getStage() == Stage.RACE
+                && sensors.getDistanceRaced() < clutchDeltaRaced)
+            clutch = maxClutch;
+
+        if (clutch > 0) {
+            double delta = clutchDelta;
+            if (sensors.getGear() < 2) {
+                delta /= 2;
+                maxClutch *= clutchMaxModifier;
+                if (sensors.getCurrentLapTime() < clutchMaxTime)
+                    clutch = maxClutch;
+            }
+
+            clutch = Math.min(maxClutch, clutch);
+
+            if (clutch != maxClutch) {
+                clutch -= delta;
+                clutch = Math.max(0.0f, clutch);
+            } else {
+                clutch -= clutchDec;
+            }
+        }
+
+        return clutch;
+    }
+
+    @Override
     public float[] initAngles() {
         float[] angles = new float[19];
         for (int i = 0; i < 5; i++) angles[i] = -90 + i * 15;
