@@ -5,6 +5,14 @@ import java.util.List;
 public class SimpleDriver extends Controller {
 	private KNNClassifier classifier;
 
+    public SimpleDriver() {
+        try {
+            List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
+            classifier = new KNNClassifier(dataset, 3);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 	/* Costanti di cambio marcia */
 	final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
 	final int[] gearDown = { 0, 2500, 3000, 3000, 3500, 3500 };
