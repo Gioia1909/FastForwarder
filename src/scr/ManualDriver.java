@@ -54,10 +54,10 @@ public class ManualDriver extends Controller {
 
         action.accelerate = accel ? 1.0 : 0.0;
         action.brake = brake ? 1.0 : 0.0;
-        action.steering = left ? -1.0f : (right ? 1.0f : 0.0f);
+        action.steering = right ? -0.2f : (left ? 0.2f : 0.0f);
 
         // Gestione marce
-        if (gear < 1) gear = 1;
+        if (gear < -1) gear = -1;
         if (gear > 6) gear = 6;
         action.gear = gear;
 
