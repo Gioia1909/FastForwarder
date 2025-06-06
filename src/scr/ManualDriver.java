@@ -30,8 +30,8 @@ public class ManualDriver extends Controller {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W -> accel = true;
                     case KeyEvent.VK_S -> brake = true;
-                    case KeyEvent.VK_A -> left = true;
-                    case KeyEvent.VK_D -> right = true;
+                    case KeyEvent.VK_A -> right = true;
+                    case KeyEvent.VK_D -> left = true;
                     case KeyEvent.VK_UP -> gear++;  // Cambio marcia manuale su
                     case KeyEvent.VK_DOWN -> gear--; // Cambio marcia manuale giù
                 }
@@ -41,8 +41,8 @@ public class ManualDriver extends Controller {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W -> accel = false;
                     case KeyEvent.VK_S -> brake = false;
-                    case KeyEvent.VK_A -> left = false;
-                    case KeyEvent.VK_D -> right = false;
+                    case KeyEvent.VK_A -> right = false;
+                    case KeyEvent.VK_D -> left = false;
                 }
             }
         });
