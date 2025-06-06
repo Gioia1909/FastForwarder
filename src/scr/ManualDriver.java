@@ -30,8 +30,8 @@ public class ManualDriver extends Controller {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W -> accel = true;
                     case KeyEvent.VK_S -> brake = true;
-                    case KeyEvent.VK_A -> right = true;
-                    case KeyEvent.VK_D -> left = true;
+                    case KeyEvent.VK_A -> left = true;
+                    case KeyEvent.VK_D -> right = true;
                     case KeyEvent.VK_UP -> gear++;  // Cambio marcia manuale su
                     case KeyEvent.VK_DOWN -> gear--; // Cambio marcia manuale giù
                 }
@@ -41,8 +41,8 @@ public class ManualDriver extends Controller {
                 switch (e.getKeyCode()) {
                     case KeyEvent.VK_W -> accel = false;
                     case KeyEvent.VK_S -> brake = false;
-                    case KeyEvent.VK_A -> right = false;
-                    case KeyEvent.VK_D -> left = false;
+                    case KeyEvent.VK_A -> left = false;
+                    case KeyEvent.VK_D -> right = false;
                 }
             }
         });
@@ -66,18 +66,26 @@ public class ManualDriver extends Controller {
 
         // Salvataggio dati
         try (BufferedWriter bw = new BufferedWriter(new FileWriter("dataset.csv", true))) {
+
+            double[] trackSensors = sensors.getTrackEdgeSensors();
+            double speedX = sensors.getSpeed(); // o sensors.getSpeedX() se disponibile
+        
             bw.write(
+                trackSensors[8] + "," +     // sinistra
+                trackSensors[9] + "," +     // centro
+                trackSensors[10] + "," +    // destra
                 sensors.getTrackPosition() + "," +
                 sensors.getAngleToTrackAxis() + "," +
-                sensors.getSpeed() + "," +
+                speedX + "," +
                 action.accelerate + "," +
                 action.brake + "," +
-                action.steering + "," +
-                action.gear + "\n"
+                action.steering + "\n"
             );
+        
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
 
         return action;
     }
