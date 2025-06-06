@@ -1,6 +1,9 @@
 package scr;
 
+import java.util.List;
+
 public class SimpleDriver extends Controller {
+	private KNNClassifier classifier;
 
 	/* Costanti di cambio marcia */
 	final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
@@ -46,6 +49,12 @@ public class SimpleDriver extends Controller {
 
 	public void reset() {
 		System.out.println("Restarting the race!");
+		try {
+        List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
+        classifier = new KNNClassifier(dataset, 3); // oppure 1
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
 
 	}
 
