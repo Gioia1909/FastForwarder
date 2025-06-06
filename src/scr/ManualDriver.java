@@ -36,11 +36,11 @@ public class ManualDriver extends Controller {
                     case KeyEvent.VK_DOWN -> gear--;
                     case KeyEvent.VK_1 -> {
                         recording = true;
-                        System.out.println("Recording ON");
+                        System.out.println("Scrittura attivata");
                     }
                     case KeyEvent.VK_0 -> {
                         recording = false;
-                        System.out.println("Recording OFF");
+                        System.out.println("Scrittura disattivata");
                     }
                 }
             }
