@@ -6,21 +6,25 @@ import java.io.*;
 
 public class ManualDriver extends Controller {
 
-    private boolean accel = false, brake = false, left = false, right = false;
+    private volatile boolean accel = false, brake = false, left = false, right = false;
     private float clutch = 0;
+    private int gear = 1;
 
-    // Costanti cambio automatico
     final int[] gearUp = {5000, 6000, 6000, 6500, 7000, 0};
     final int[] gearDown = {0, 2500, 3000, 3000, 3500, 3500};
 
     public ManualDriver() {
-        JFrame frame = new JFrame("Manual Driver Control");
+        // Finestra invisibile con focus permanente per leggere i tasti
+        JFrame frame = new JFrame("Manual Driver");
         frame.setSize(200, 100);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setAlwaysOnTop(true);
         frame.setUndecorated(true);
-        frame.setOpacity(0f); // finestra invisibile
+        frame.setOpacity(0f);
+        frame.setFocusable(true);
         frame.setVisible(true);
+        frame.requestFocus();
+
         frame.addKeyListener(new KeyAdapter() {
             public void keyPressed(KeyEvent e) {
                 switch (e.getKeyCode()) {
@@ -28,6 +32,8 @@ public class ManualDriver extends Controller {
                     case KeyEvent.VK_S -> brake = true;
                     case KeyEvent.VK_A -> left = true;
                     case KeyEvent.VK_D -> right = true;
+                    case KeyEvent.VK_UP -> gear++;  // Cambio marcia manuale su
+                    case KeyEvent.VK_DOWN -> gear--; // Cambio marcia manuale giù
                 }
             }
 
@@ -45,24 +51,21 @@ public class ManualDriver extends Controller {
     @Override
     public Action control(SensorModel sensors) {
         Action action = new Action();
-        action.accelerate = accel ? 1 : 0;
-        action.brake = brake ? 1 : 0;
-        action.steering = left ? -1 : (right ? 1 : 0);
 
-        // Cambio automatico
-        int gear = sensors.getGear();
-        double rpm = sensors.getRPM();
+        action.accelerate = accel ? 1.0 : 0.0;
+        action.brake = brake ? 1.0 : 0.0;
+        action.steering = left ? -1.0f : (right ? 1.0f : 0.0f);
+
+        // Gestione marce
         if (gear < 1) gear = 1;
-        if (gear < 6 && rpm >= gearUp[gear - 1]) gear++;
-        else if (gear > 1 && rpm <= gearDown[gear - 1]) gear--;
+        if (gear > 6) gear = 6;
         action.gear = gear;
 
         // Frizione dinamica
         action.clutch = clutching(sensors, clutch);
 
         // Salvataggio dati
-        try (FileWriter fw = new FileWriter("dataset.csv", true);
-             BufferedWriter bw = new BufferedWriter(fw)) {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("dataset.csv", true))) {
             bw.write(
                 sensors.getTrackPosition() + "," +
                 sensors.getAngleToTrackAxis() + "," +
@@ -80,6 +83,7 @@ public class ManualDriver extends Controller {
     }
 
     private float clutching(SensorModel sensors, float clutch) {
+        // Stesso codice della tua funzione: dinamico nei primi secondi
         final float clutchMax = 0.5f;
         final float clutchDelta = 0.05f;
         final float clutchMaxTime = 1.5f;
@@ -117,21 +121,17 @@ public class ManualDriver extends Controller {
     }
 
     @Override
-    public float[] initAngles() {
-        float[] angles = new float[19];
-        for (int i = 0; i < 5; i++) angles[i] = -90 + i * 15;
-        for (int i = 5; i < 9; i++) angles[i] = -20 + (i - 5) * 5;
-        angles[9] = 0;
-        for (int i = 0; i < 5; i++) angles[18 - i] = 90 - i * 15;
-        for (int i = 5; i < 9; i++) angles[18 - i] = 20 - (i - 5) * 5;
-        return angles;
-    }
-
     public void reset() {
         System.out.println("Reset!");
     }
 
+    @Override
     public void shutdown() {
         System.out.println("Shutdown!");
+    }
+
+    @Override
+    public float[] initAngles() {
+        return super.initAngles(); // oppure puoi personalizzarli
     }
 }
