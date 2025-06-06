@@ -36,11 +36,11 @@ public class ManualDriver extends Controller {
                     case KeyEvent.VK_DOWN -> gear--;
                     case KeyEvent.VK_1 -> {
                         recording = true;
-                        System.out.println("Recording ON");
+                        System.out.println("Scrittura attivata");
                     }
                     case KeyEvent.VK_0 -> {
                         recording = false;
-                        System.out.println("Recording OFF");
+                        System.out.println("Scrittura disattivata");
                     }
                 }
             }
@@ -80,6 +80,12 @@ public class ManualDriver extends Controller {
 
         action.clutch = clutching(sensors, clutch);
 
+    //  Scrivi nel CSV solo se recording è attivo
+    if (recording) {
+        try {
+            File file = new File("dataset.csv");
+            boolean fileExists = file.exists();
+            boolean fileIsEmpty = file.length() == 0;
         if (recording) {
             try {
                 File file = new File("dataset.csv");
