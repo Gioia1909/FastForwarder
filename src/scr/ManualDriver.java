@@ -7,7 +7,7 @@ import java.io.*;
 public class ManualDriver extends Controller {
 
     private volatile boolean accel = false, brake = false, left = false, right = false;
-    private volatile boolean recording = false; // Switch per scrittura dataset
+    private volatile boolean recording = false;
     private float clutch = 0;
     private int gear = 1;
 
@@ -57,19 +57,28 @@ public class ManualDriver extends Controller {
     }
 
     @Override
-public Action control(SensorModel sensors) {
-    Action action = new Action();
+    public Action control(SensorModel sensors) {
+        Action action = new Action();
 
-    // Costruisci l'azione da tastiera (o da IA, se applicato)
-    action.accelerate = accel ? 1.0 : 0.0;
-    action.brake = brake ? 0.5 : 0.0;
-    action.steering = right ? -0.2f : (left ? 0.2f : 0.0f);
+        action.accelerate = accel ? 1.0 : 0.0;
+        action.brake = brake ? 0.5 : 0.0;
 
-    if (gear < -1) gear = -1;
-    if (gear > 6) gear = 6;
-    action.gear = gear;
+        double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
+        float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
 
-    action.clutch = clutching(sensors, clutch);
+        if (left) {
+            action.steering = steeringIntensity;
+        } else if (right) {
+            action.steering = -steeringIntensity;
+        } else {
+            action.steering = 0.0f;
+        }
+
+        if (gear < -1) gear = -1;
+        if (gear > 6) gear = 6;
+        action.gear = gear;
+
+        action.clutch = clutching(sensors, clutch);
 
     //  Scrivi nel CSV solo se recording è attivo
     if (recording) {
@@ -77,39 +86,40 @@ public Action control(SensorModel sensors) {
             File file = new File("dataset.csv");
             boolean fileExists = file.exists();
             boolean fileIsEmpty = file.length() == 0;
+        if (recording) {
+            try {
+                File file = new File("dataset.csv");
+                boolean fileExists = file.exists();
+                boolean fileIsEmpty = file.length() == 0;
 
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
-                // Scrivi intestazione se necessario
-                if (!fileExists || fileIsEmpty) {
-                    bw.write("TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+                try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+                    if (!fileExists || fileIsEmpty) {
+                        bw.write("TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+                    }
+
+                    double[] trackSensors = sensors.getTrackEdgeSensors();
+                    double speedX = sensors.getSpeed(); // oppure sensors.getSpeedX()
+
+                    bw.write(
+                        trackSensors[8] + "," +
+                        trackSensors[9] + "," +
+                        trackSensors[10] + "," +
+                        sensors.getTrackPosition() + "," +
+                        sensors.getAngleToTrackAxis() + "," +
+                        speedX + "," +
+                        action.accelerate + "," +
+                        action.brake + "," +
+                        action.steering + "\n"
+                    );
                 }
 
-                // Raccogli i dati dai sensori
-                double[] trackSensors = sensors.getTrackEdgeSensors();
-                double speedX = sensors.getSpeed(); // oppure sensors.getSpeedX() se esiste
-
-                // Scrivi riga dati
-                bw.write(
-                    trackSensors[8] + "," +
-                    trackSensors[9] + "," +
-                    trackSensors[10] + "," +
-                    sensors.getTrackPosition() + "," +
-                    sensors.getAngleToTrackAxis() + "," +
-                    speedX + "," +
-                    action.accelerate + "," +
-                    action.brake + "," +
-                    action.steering + "\n"
-                );
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+        return action;
     }
-
-    return action;
-}
-
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;
