@@ -86,11 +86,6 @@ public class ManualDriver extends Controller {
             File file = new File("dataset.csv");
             boolean fileExists = file.exists();
             boolean fileIsEmpty = file.length() == 0;
-        if (recording) {
-            try {
-                File file = new File("dataset.csv");
-                boolean fileExists = file.exists();
-                boolean fileIsEmpty = file.length() == 0;
 
                 try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
                     if (!fileExists || fileIsEmpty) {
