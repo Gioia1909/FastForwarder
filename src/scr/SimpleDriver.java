@@ -207,11 +207,16 @@ public class SimpleDriver extends Controller {
 		else // Auto non bloccata
 {
     double[] input = {
-        sensors.getTrackEdgeSensors()[8],
+		//Indicano la distanza in metri dal bordo della pista in una specifica direzione.
+
+        sensors.getTrackEdgeSensors()[8], 
         sensors.getTrackEdgeSensors()[9],
-        sensors.getTrackEdgeSensors()[10],
+        sensors.getTrackEdgeSensors()[10], 
+		//posizione della macchina rispetto alla carreggiata (centro pista = 0, sinistra -1, destra +1, > 1.0 fuori pista)
         sensors.getTrackPosition(),
+		//angolo in radianti tra l'asse della macchina e l'asse della pista
         sensors.getAngleToTrackAxis(),
+		//velocità della macchina in km/h
         sensors.getSpeed()
     };
 
