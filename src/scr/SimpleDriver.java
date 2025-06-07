@@ -7,7 +7,7 @@ public class SimpleDriver extends Controller {
 
     public SimpleDriver() {
         try {
-            List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
+            List<DataPoint> dataset = DatasetLoader.load("mixed_dataset.csv");
             classifier = new KNNClassifier(dataset, 3);
         } catch (Exception e) {
             e.printStackTrace();
