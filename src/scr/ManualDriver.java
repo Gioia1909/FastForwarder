@@ -120,7 +120,7 @@ public class ManualDriver extends Controller {
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
                         if (!fileExists || fileIsEmpty) {
                             bw.write(
-                                    "TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+                                    "TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering, Gear\n");
 
                         }
 
@@ -135,7 +135,7 @@ public class ManualDriver extends Controller {
                                         speed + "," +
                                         action.accelerate + "," +
                                         action.brake + "," +
-                                        steering + "\n");
+                                        steering + "," + gear + "\n");
                     }
 
                 } catch (IOException e) {
