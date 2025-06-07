@@ -22,9 +22,9 @@ public class DatasetLoader {
                 input[i] = Double.parseDouble(tokens[i]);
             }
 
-            int accel = (int) Math.round(Double.parseDouble(tokens[6]));
-            int brake = (int) Math.round(Double.parseDouble(tokens[7]));
-            int steer = (int) Math.round(Double.parseDouble(tokens[8]));
+            double accel = Double.parseDouble(tokens[6]);
+            double brake = Double.parseDouble(tokens[7]);
+            double steer = Double.parseDouble(tokens[8]);
 
             dataset.add(new DataPoint(input, steer, accel, brake));
         }
