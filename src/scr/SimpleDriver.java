@@ -215,15 +215,11 @@ public class SimpleDriver extends Controller {
         sensors.getSpeed()
     };
 
-    int predictedSteering = classifier.predictSteering(input);
-    int predictedAccel = classifier.predictAccelerate(input);
-    int predictedBrake = classifier.predictBrake(input);
-
     int gear = getGear(sensors);
 
-    float steer = (float) predictedSteering;
-    float accel = (float) predictedAccel;
-    float brake = (float) predictedBrake;
+    double steer = classifier.predictSteering(input);
+    double accel =  classifier.predictAccelerate(input);
+    double brake = classifier.predictBrake(input);
 
     clutch = clutching(sensors, clutch);
 

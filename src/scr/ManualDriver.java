@@ -87,6 +87,8 @@ private double lastAngle = 0;
 
         action.clutch = clutching(sensors, clutch);
 
+
+
     //  Scrivi nel CSV solo se recording è attivo
     if (recording) {
         long currentTime = System.currentTimeMillis();

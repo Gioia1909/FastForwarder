@@ -26,37 +26,36 @@ public class KNNClassifier {
         this.k = k;
     }
 
-    public int predictSteering(double[] input) {
-        return predict(input, "steering");
+    public double predictSteering(double[] input) {
+        return predictContinuous(input, "steering");
     }
 
-    public int predictAccelerate(double[] input) {
-        return predict(input, "accelerate");
+    public double predictAccelerate(double[] input) {
+        return predictContinuous(input, "accelerate");
     }
 
-    public int predictBrake(double[] input) {
-        return predict(input, "brake");
+    public double predictBrake(double[] input) {
+        return predictContinuous(input, "brake");
     }
 
-    private int predict(double[] input, String target) {
+     // Metodo per previsione continua: restituisce la media dei k vicini
+     private double predictContinuous(double[] input, String target) {
         List<DataPoint> neighbors = new ArrayList<>(dataset);
         neighbors.sort(Comparator.comparingDouble(p -> euclidean(p.features, input)));
 
-        Map<Integer, Integer> counts = new HashMap<>();
+        double sum = 0.0;
         for (int i = 0; i < k; i++) {
-            int label = switch (target) {
-                case "steering" -> neighbors.get(i).steering;
-                case "accelerate" -> neighbors.get(i).accelerate;
-                case "brake" -> neighbors.get(i).brake;
+            DataPoint dp = neighbors.get(i);
+            double value = switch (target) {
+                case "steering" -> dp.steering;
+                case "accelerate" -> dp.accelerate;
+                case "brake" -> dp.brake;
                 default -> throw new IllegalArgumentException("Unknown target: " + target);
             };
-            counts.put(label, counts.getOrDefault(label, 0) + 1);
+            sum += value;
         }
 
-        return counts.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .get()
-                .getKey();
+        return sum / k;
     }
 
     private double euclidean(double[] a, double[] b) {
