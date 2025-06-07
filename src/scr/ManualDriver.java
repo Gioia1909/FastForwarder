@@ -11,15 +11,14 @@ public class ManualDriver extends Controller {
     private float clutch = 0;
     private int gear = 1;
     private long lastSaveTime = 0;
-private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
+    private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
 
-private double lastSteering = 0;
-private double lastSpeed = 0;
-private double lastAngle = 0;
+    private double lastSteering = 0;
+    private double lastSpeed = 0;
+    private double lastAngle = 0;
 
-
-    final int[] gearUp = {5000, 6000, 6000, 6500, 7000, 0};
-    final int[] gearDown = {0, 2500, 3000, 3000, 3500, 3500};
+    final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
+    final int[] gearDown = { 0, 2500, 3000, 3000, 3500, 3500 };
 
     public ManualDriver() {
         JFrame frame = new JFrame("Manual Driver");
@@ -81,67 +80,71 @@ private double lastAngle = 0;
             action.steering = 0.0f;
         }
 
-        if (gear < -1) gear = -1;
-        if (gear > 6) gear = 6;
+        if (gear < -1)
+            gear = -1;
+        if (gear > 6)
+            gear = 6;
         action.gear = gear;
 
         action.clutch = clutching(sensors, clutch);
 
+        // Scrivi nel CSV solo se recording è attivo
+        if (recording) {
+            long currentTime = System.currentTimeMillis();
+            boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
 
+            double steering = action.steering;
+            speed = sensors.getSpeed(); // senza "double"
+            double angle = sensors.getAngleToTrackAxis();
 
-    //  Scrivi nel CSV solo se recording è attivo
-    if (recording) {
-        long currentTime = System.currentTimeMillis();
-        boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
-    
-        double steering = action.steering;
-        speed = sensors.getSpeed(); // senza "double"
-        double angle = sensors.getAngleToTrackAxis();
-    
-        boolean significantChange =
-                Math.abs(steering - lastSteering) > 0.05 ||
-                Math.abs(speed - lastSpeed) > 2.0 ||
-                Math.abs(angle - lastAngle) > 0.02;
-    
-        if (timeElapsed && significantChange) {
-            lastSaveTime = currentTime;
-            lastSteering = steering;
-            lastSpeed = speed;
-            lastAngle = angle;
-    
-            try {
-                File file = new File("dataset.csv");
-                boolean fileExists = file.exists();
-                boolean fileIsEmpty = file.length() == 0;
-    
-                try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
-                    if (!fileExists || fileIsEmpty) {
-                        bw.write("TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+            boolean significantChange = Math.abs(steering - lastSteering) > 0.05 ||
+                    Math.abs(speed - lastSpeed) > 2.0 ||
+                    Math.abs(angle - lastAngle) > 0.02;
+
+            if (timeElapsed && significantChange) {
+                lastSaveTime = currentTime;
+                lastSteering = steering;
+                lastSpeed = speed;
+                lastAngle = angle;
+
+                try {
+                    File file = new File("dataset.csv");
+                    boolean fileExists = file.exists();
+                    boolean fileIsEmpty = file.length() == 0;
+                    String mode = "normal";
+                    if (Math.abs(sensors.getTrackPosition()) > 0.9 || sensors.getSpeed() < 3
+                            || sensors.getDamage() > 0) {
+                        mode = "recovery";
                     }
-    
-                    double[] trackSensors = sensors.getTrackEdgeSensors();
-    
-                    bw.write(
-                        trackSensors[8] + "," +
-                        trackSensors[9] + "," +
-                        trackSensors[10] + "," +
-                        sensors.getTrackPosition() + "," +
-                        sensors.getAngleToTrackAxis() + "," +
-                        speed + "," +
-                        action.accelerate + "," +
-                        action.brake + "," +
-                        steering + "\n"
-                    );
+
+                    try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+                        if (!fileExists || fileIsEmpty) {
+                            bw.write(
+                                    "TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+
+                        }
+
+                        double[] trackSensors = sensors.getTrackEdgeSensors();
+
+                        bw.write(
+                                trackSensors[8] + "," +
+                                        trackSensors[9] + "," +
+                                        trackSensors[10] + "," +
+                                        sensors.getTrackPosition() + "," +
+                                        sensors.getAngleToTrackAxis() + "," +
+                                        speed + "," +
+                                        action.accelerate + "," +
+                                        action.brake + "," +
+                                        steering + "\n");
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-    
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
+        return action;
     }
-    return action;
-    }    
-    
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;

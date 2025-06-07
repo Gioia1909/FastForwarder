@@ -5,14 +5,15 @@ import java.util.List;
 public class SimpleDriver extends Controller {
 	private KNNClassifier classifier;
 
-    public SimpleDriver() {
-        try {
-            List<DataPoint> dataset = DatasetLoader.load("mixed_dataset.csv");
-            classifier = new KNNClassifier(dataset, 3);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+	public SimpleDriver() {
+		try {
+			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
+			classifier = new KNNClassifier(dataset, 5);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	/* Costanti di cambio marcia */
 	final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
 	final int[] gearDown = { 0, 2500, 3000, 3000, 3500, 3500 };
@@ -48,8 +49,6 @@ public class SimpleDriver extends Controller {
 	final float clutchMaxModifier = (float) 1.3;
 	final float clutchMaxTime = (float) 1.5;
 
-
-
 	private int stuck = 0;
 
 	// current clutch
@@ -58,11 +57,11 @@ public class SimpleDriver extends Controller {
 	public void reset() {
 		System.out.println("Restarting the race!");
 		try {
-        List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
-        classifier = new KNNClassifier(dataset, 3); // oppure 1
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
+			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
+			classifier = new KNNClassifier(dataset, 3); // oppure 1
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 	}
 
@@ -93,12 +92,16 @@ public class SimpleDriver extends Controller {
 	}
 
 	private float getSteer(SensorModel sensors) {
-		/** L'angolo di sterzata viene calcolato correggendo l'angolo effettivo della vettura
-		 * rispetto all'asse della pista [sensors.getAngle()] e regolando la posizione della vettura
+		/**
+		 * L'angolo di sterzata viene calcolato correggendo l'angolo effettivo della
+		 * vettura
+		 * rispetto all'asse della pista [sensors.getAngle()] e regolando la posizione
+		 * della vettura
 		 * rispetto al centro della pista [sensors.getTrackPos()*0,5].
 		 */
 		float targetAngle = (float) (sensors.getAngleToTrackAxis() - sensors.getTrackPosition() * 0.5);
-		// ad alta velocità ridurre il comando di sterzata per evitare di perdere il controllo
+		// ad alta velocità ridurre il comando di sterzata per evitare di perdere il
+		// controllo
 		if (sensors.getSpeed() > steerSensitivityOffset)
 			return (float) (targetAngle
 					/ (steerLock * (sensors.getSpeed() - steerSensitivityOffset) * wheelSensitivityCoeff));
@@ -118,7 +121,8 @@ public class SimpleDriver extends Controller {
 
 			float targetSpeed;
 
-			// Se la pista è rettilinea e abbastanza lontana da una curva, quindi va alla massima velocità
+			// Se la pista è rettilinea e abbastanza lontana da una curva, quindi va alla
+			// massima velocità
 			if (sensorsensor > maxSpeedDist || (sensorsensor >= rxSensor && sensorsensor >= sxSensor))
 				targetSpeed = maxSpeed;
 			else {
@@ -146,23 +150,27 @@ public class SimpleDriver extends Controller {
 			}
 
 			/**
-			 * Il comando di accelerazione/frenata viene scalato in modo esponenziale rispetto
+			 * Il comando di accelerazione/frenata viene scalato in modo esponenziale
+			 * rispetto
 			 * alla differenza tra velocità target e quella attuale
 			 */
 			return (float) (2 / (1 + Math.exp(sensors.getSpeed() - targetSpeed)) - 1);
 		} else
-			// Quando si esce dalla carreggiata restituisce un comando di accelerazione moderata
+			// Quando si esce dalla carreggiata restituisce un comando di accelerazione
+			// moderata
 			return (float) 0.3;
 	}
 
 	public Action control(SensorModel sensors) {
 		// Controlla se l'auto è attualmente bloccata
 		/**
-			Se l'auto ha un angolo, rispetto alla traccia, superiore a 30°
-			incrementa "stuck" che è una variabile che indica per quanti cicli l'auto è in
-			condizione di difficoltà.
-			Quando l'angolo si riduce, "stuck" viene riportata a 0 per indicare che l'auto è
-			uscita dalla situaizone di difficoltà
+		 * Se l'auto ha un angolo, rispetto alla traccia, superiore a 30°
+		 * incrementa "stuck" che è una variabile che indica per quanti cicli l'auto è
+		 * in
+		 * condizione di difficoltà.
+		 * Quando l'angolo si riduce, "stuck" viene riportata a 0 per indicare che
+		 * l'auto è
+		 * uscita dalla situaizone di difficoltà
 		 **/
 		if (Math.abs(sensors.getAngleToTrackAxis()) > stuckAngle) {
 			// update stuck counter
@@ -174,13 +182,15 @@ public class SimpleDriver extends Controller {
 
 		// Applicare la polizza di recupero o meno in base al tempo trascorso
 		/**
-		Se "stuck" è superiore a 25 (stuckTime) allora procedi a entrare in situaizone di RECOVERY
-		per far fronte alla situazione di difficoltà
+		 * Se "stuck" è superiore a 25 (stuckTime) allora procedi a entrare in
+		 * situaizone di RECOVERY
+		 * per far fronte alla situazione di difficoltà
 		 **/
 
-		if (stuck > stuckTime) { //Auto Bloccata
+		if (stuck > stuckTime) { // Auto Bloccata
 			/**
-			 * Impostare la marcia e il comando di sterzata supponendo che l'auto stia puntando
+			 * Impostare la marcia e il comando di sterzata supponendo che l'auto stia
+			 * puntando
 			 * in una direzione al di fuori di pista
 			 **/
 
@@ -205,38 +215,40 @@ public class SimpleDriver extends Controller {
 		}
 
 		else // Auto non bloccata
-{
-    double[] input = {
-		//Indicano la distanza in metri dal bordo della pista in una specifica direzione.
+		{
+			double[] input = {
+					// Indicano la distanza in metri dal bordo della pista in una specifica
+					// direzione.
 
-        sensors.getTrackEdgeSensors()[8], 
-        sensors.getTrackEdgeSensors()[9],
-        sensors.getTrackEdgeSensors()[10], 
-		//posizione della macchina rispetto alla carreggiata (centro pista = 0, sinistra -1, destra +1, > 1.0 fuori pista)
-        sensors.getTrackPosition(),
-		//angolo in radianti tra l'asse della macchina e l'asse della pista
-        sensors.getAngleToTrackAxis(),
-		//velocità della macchina in km/h
-        sensors.getSpeed()
-    };
+					sensors.getTrackEdgeSensors()[8],
+					sensors.getTrackEdgeSensors()[9],
+					sensors.getTrackEdgeSensors()[10],
+					// posizione della macchina rispetto alla carreggiata (centro pista = 0,
+					// sinistra -1, destra +1, > 1.0 fuori pista)
+					sensors.getTrackPosition(),
+					// angolo in radianti tra l'asse della macchina e l'asse della pista
+					sensors.getAngleToTrackAxis(),
+					// velocità della macchina in km/h
+					sensors.getSpeed()
+			};
 
-    int gear = getGear(sensors);
+			int gear = classifier.predictGear(input);
 
-    double steer = classifier.predictSteering(input);
-    double accel =  classifier.predictAccelerate(input);
-    double brake = classifier.predictBrake(input);
+			double steer = classifier.predictSteering(input);
+			double accel = classifier.predictAccelerate(input);
+			double brake = classifier.predictBrake(input);
 
-    clutch = clutching(sensors, clutch);
+			clutch = clutching(sensors, clutch);
 
-    Action action = new Action();
-    action.gear = gear;
-    action.steering = steer;
-    action.accelerate = accel;
-    action.brake = brake;
-    action.clutch = clutch;
+			Action action = new Action();
+			action.gear = gear;
+			action.steering = steer;
+			action.accelerate = accel;
+			action.brake = brake;
+			action.clutch = clutch;
 
-    return action;
-}
+			return action;
+		}
 
 	}
 
@@ -244,7 +256,8 @@ public class SimpleDriver extends Controller {
 		// Converte la velocità in m/s
 		float speed = (float) (sensors.getSpeed() / 3.6);
 
-		// Quando la velocità è inferiore alla velocità minima per l'abs non interviene in caso di frenata
+		// Quando la velocità è inferiore alla velocità minima per l'abs non interviene
+		// in caso di frenata
 		if (speed < absMinSpeed)
 			return brake;
 
@@ -254,7 +267,8 @@ public class SimpleDriver extends Controller {
 			slip += sensors.getWheelSpinVelocity()[i] * wheelRadius[i];
 		}
 
-		// Lo slittamento è la differenza tra la velocità effettiva dell'auto e la velocità media delle ruote
+		// Lo slittamento è la differenza tra la velocità effettiva dell'auto e la
+		// velocità media delle ruote
 		slip = speed - slip / 4.0f;
 
 		// Quando lo slittamento è troppo elevato, si applica l'ABS
@@ -283,7 +297,8 @@ public class SimpleDriver extends Controller {
 			double delta = clutchDelta;
 			if (sensors.getGear() < 2) {
 
-				// Applicare un'uscita più forte della frizione quando la marcia è una e la corsa è appena iniziata.
+				// Applicare un'uscita più forte della frizione quando la marcia è una e la
+				// corsa è appena iniziata.
 				delta /= 2;
 				maxClutch *= clutchMaxModifier;
 				if (sensors.getCurrentLapTime() < clutchMaxTime)
