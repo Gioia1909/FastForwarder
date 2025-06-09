@@ -16,19 +16,22 @@ public class DatasetLoader {
 
         while ((line = br.readLine()) != null) {
             String[] tokens = line.split(",");
-            double[] input = new double[6];
-            for (int i = 0; i < 6; i++) {
+             if (tokens.length < 12) continue;
+             double[] input = new double[8];
+            for (int i = 0; i < 8; i++) {
                 input[i] = Double.parseDouble(tokens[i]);
             }
 
-            double accel = Double.parseDouble(tokens[6]);
-            double brake = Double.parseDouble(tokens[7]);
-            double steer = Double.parseDouble(tokens[8]);
-            int gear = Integer.parseInt(tokens[9]); // Aggiungo il gear come ultima feature
+            // azioni 
+            double accel = Double.parseDouble(tokens[8]);
+            double brake = Double.parseDouble(tokens[9]);
+            double steer = Double.parseDouble(tokens[10]);
+            int gear = Integer.parseInt(tokens[11]);
 
             dataset.add(new DataPoint(input, steer, accel, brake, gear));
         }
 
+                br.close();
         return dataset;
     }
 }

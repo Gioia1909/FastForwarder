@@ -220,9 +220,11 @@ public class SimpleDriver extends Controller {
 					// Indicano la distanza in metri dal bordo della pista in una specifica
 					// direzione.
 
-					sensors.getTrackEdgeSensors()[8],
-					sensors.getTrackEdgeSensors()[9],
-					sensors.getTrackEdgeSensors()[10],
+						sensors.getTrackEdgeSensors()[5],  
+						sensors.getTrackEdgeSensors()[7],
+						sensors.getTrackEdgeSensors()[9],
+						sensors.getTrackEdgeSensors()[11],
+						sensors.getTrackEdgeSensors()[13],
 					// posizione della macchina rispetto alla carreggiata (centro pista = 0,
 					// sinistra -1, destra +1, > 1.0 fuori pista)
 					sensors.getTrackPosition(),
@@ -237,6 +239,7 @@ public class SimpleDriver extends Controller {
 			double steer = classifier.predictSteering(input);
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);
+
 
 			clutch = clutching(sensors, clutch);
 

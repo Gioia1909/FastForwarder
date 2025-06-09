@@ -120,22 +120,26 @@ public class ManualDriver extends Controller {
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
                         if (!fileExists || fileIsEmpty) {
                             bw.write(
-                                    "TrackLeft,TrackCenter,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering\n");
+                                    "TrackLeft, TrackCenterLeft, TrackCenter, TrackCenterRight, TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering, Gear\n");
 
                         }
 
                         double[] trackSensors = sensors.getTrackEdgeSensors();
 
                         bw.write(
-                                trackSensors[8] + "," +
-                                        trackSensors[9] + "," +
-                                        trackSensors[10] + "," +
-                                        sensors.getTrackPosition() + "," +
-                                        sensors.getAngleToTrackAxis() + "," +
-                                        speed + "," +
-                                        action.accelerate + "," +
-                                        action.brake + "," +
-                                        steering + "\n");
+                            trackSensors[5] + "," +   
+                            trackSensors[7] + "," +   
+                            trackSensors[9] + "," +   
+                            trackSensors[11] + "," +  
+                            trackSensors[13] + "," +  
+                            sensors.getTrackPosition() + "," +
+                            sensors.getAngleToTrackAxis() + "," +
+                            speed + "," +
+                            action.accelerate + "," +
+                            action.brake + "," +
+                            steering + "," +
+                            action.gear + "\n"
+);
                     }
 
                 } catch (IOException e) {

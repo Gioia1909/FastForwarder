@@ -20,6 +20,7 @@ public class KNNClassifier {
 
     private final List<DataPoint> dataset;
     private final int k;
+    
 
     public KNNClassifier(List<DataPoint> dataset, int k) {
         this.dataset = dataset;
