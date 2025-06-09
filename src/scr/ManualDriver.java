@@ -73,11 +73,11 @@ public class ManualDriver extends Controller {
         float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
 
         if (left) {
-            action.steering = steeringIntensity;
+            action.steering = Math.min(1.0f, action.steering + 0.05f);
         } else if (right) {
-            action.steering = -steeringIntensity;
+            action.steering = Math.max(-1.0f, action.steering - 0.05f);
         } else {
-            action.steering = 0.0f;
+            action.steering *= 0.8f; // rientra gradualmente verso 0
         }
 
         if (gear < -1)
@@ -97,7 +97,7 @@ public class ManualDriver extends Controller {
             speed = sensors.getSpeed(); // senza "double"
             double angle = sensors.getAngleToTrackAxis();
 
-            boolean significantChange = Math.abs(steering - lastSteering) > 0.05 ||
+            boolean significantChange = Math.abs(steering - lastSteering) > 0.01 ||
                     Math.abs(speed - lastSpeed) > 2.0 ||
                     Math.abs(angle - lastAngle) > 0.02;
 
@@ -127,19 +127,18 @@ public class ManualDriver extends Controller {
                         double[] trackSensors = sensors.getTrackEdgeSensors();
 
                         bw.write(
-                            trackSensors[5] + "," +   
-                            trackSensors[7] + "," +   
-                            trackSensors[9] + "," +   
-                            trackSensors[11] + "," +  
-                            trackSensors[13] + "," +  
-                            sensors.getTrackPosition() + "," +
-                            sensors.getAngleToTrackAxis() + "," +
-                            speed + "," +
-                            action.accelerate + "," +
-                            action.brake + "," +
-                            steering + "," +
-                            action.gear + "\n"
-);
+                                trackSensors[5] + "," +
+                                        trackSensors[7] + "," +
+                                        trackSensors[9] + "," +
+                                        trackSensors[11] + "," +
+                                        trackSensors[13] + "," +
+                                        sensors.getTrackPosition() + "," +
+                                        sensors.getAngleToTrackAxis() + "," +
+                                        speed + "," +
+                                        action.accelerate + "," +
+                                        action.brake + "," +
+                                        steering + "," +
+                                        action.gear + "\n");
                     }
 
                 } catch (IOException e) {
