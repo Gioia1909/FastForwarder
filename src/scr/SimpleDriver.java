@@ -4,11 +4,16 @@ import java.util.List;
 
 public class SimpleDriver extends Controller {
 	private KNNClassifier classifier;
+	private double[] min;
+	private double[] max;
 
 	public SimpleDriver() {
 		try {
 			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
 			classifier = new KNNClassifier(dataset, 5);
+			double[][] minMax = DatasetLoader.loadMinMaxDaFile("min.txt", "max.txt");
+			min = minMax[0];
+			max = minMax[1];
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -216,15 +221,15 @@ public class SimpleDriver extends Controller {
 
 		else // Auto non bloccata
 		{
-			double[] input = {
+			double[] rawInput = {
 					// Indicano la distanza in metri dal bordo della pista in una specifica
 					// direzione.
 
-						sensors.getTrackEdgeSensors()[5],  
-						sensors.getTrackEdgeSensors()[7],
-						sensors.getTrackEdgeSensors()[9],
-						sensors.getTrackEdgeSensors()[11],
-						sensors.getTrackEdgeSensors()[13],
+					sensors.getTrackEdgeSensors()[5],
+					sensors.getTrackEdgeSensors()[7],
+					sensors.getTrackEdgeSensors()[9],
+					sensors.getTrackEdgeSensors()[11],
+					sensors.getTrackEdgeSensors()[13],
 					// posizione della macchina rispetto alla carreggiata (centro pista = 0,
 					// sinistra -1, destra +1, > 1.0 fuori pista)
 					sensors.getTrackPosition(),
@@ -233,13 +238,16 @@ public class SimpleDriver extends Controller {
 					// velocità della macchina in km/h
 					sensors.getSpeed()
 			};
+			double[] input = new double[8];
+			for (int i = 0; i < 8; i++) {
+				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
+			}
 
 			int gear = classifier.predictGear(input);
 
 			double steer = classifier.predictSteering(input);
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);
-
 
 			clutch = clutching(sensors, clutch);
 
