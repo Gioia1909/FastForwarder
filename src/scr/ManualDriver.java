@@ -12,7 +12,7 @@ public class ManualDriver extends Controller {
     private int gear = 1;
     private long lastSaveTime = 0;
     private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
-
+    private float steering = 0.0f;
     private double lastSteering = 0;
     private double lastSpeed = 0;
     private double lastAngle = 0;
@@ -72,13 +72,18 @@ public class ManualDriver extends Controller {
         double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
         float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
 
+        // aggiorna la variabile globale, non quella interna a action
         if (left) {
-            action.steering = Math.min(1.0f, action.steering + 0.05f);
+            steering = Math.min(1.0f, steering + 0.05f);
         } else if (right) {
-            action.steering = Math.max(-1.0f, action.steering - 0.05f);
+            steering = Math.max(-1.0f, steering - 0.05f);
         } else {
-            action.steering *= 0.8f; // rientra gradualmente verso 0
+            steering *= 0.8f;
+            if (Math.abs(steering) < 0.01f)
+                steering = 0.0f;
         }
+
+        action.steering = steering;
 
         if (gear < -1)
             gear = -1;
