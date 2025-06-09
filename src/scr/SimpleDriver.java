@@ -1,17 +1,24 @@
 package scr;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 
 public class SimpleDriver extends Controller {
 	private KNNClassifier classifier;
 	private double[] min;
 	private double[] max;
+	private BufferedWriter logWriter;
 
 	public SimpleDriver() {
 		try {
 			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
 			classifier = new KNNClassifier(dataset, 5);
 			double[][] minMax = DatasetLoader.loadMinMaxDaFile("min.txt", "max.txt");
+			logWriter = new BufferedWriter(new FileWriter("log_predizioni.csv"));
+			logWriter.write(
+					"TrackLeft,TrackCenterLeft,TrackCenter,TrackCenterRight,TrackRight,TrackPosition,AngleToTrackAxis,Speed,Norm_TrackLeft,Norm_TrackCenterLeft,Norm_TrackCenter,Norm_TrackCenterRight,Norm_TrackRight,Norm_TrackPosition,Norm_AngleToTrackAxis,Norm_Speed,Pred_Gear,Pred_Steer,Pred_Accel,Pred_Brake\n");
 			min = minMax[0];
 			max = minMax[1];
 		} catch (Exception e) {
@@ -72,6 +79,12 @@ public class SimpleDriver extends Controller {
 
 	public void shutdown() {
 		System.out.println("Bye bye!");
+		try {
+			if (logWriter != null)
+				logWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private int getGear(SensorModel sensors) {
@@ -251,6 +264,28 @@ public class SimpleDriver extends Controller {
 
 			clutch = clutching(sensors, clutch);
 
+			try {
+				StringBuilder log = new StringBuilder();
+
+				// Valori raw
+				for (double val : rawInput) {
+					log.append(val).append(",");
+				}
+				// Valori normalizzati
+				for (double val : input) {
+					log.append(val).append(",");
+				}
+				// Valori predetti
+				log.append(gear).append(",");
+				log.append(steer).append(",");
+				log.append(accel).append(",");
+				log.append(brake).append("\n");
+
+				logWriter.write(log.toString());
+				logWriter.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			Action action = new Action();
 			action.gear = gear;
 			action.steering = steer;
