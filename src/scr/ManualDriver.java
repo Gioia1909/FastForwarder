@@ -11,11 +11,8 @@ public class ManualDriver extends Controller {
     private float clutch = 0;
     private int gear = 1;
     private long lastSaveTime = 0;
-    private final long MIN_SAVE_INTERVAL_MS = 100; // salva ogni 150 ms max
+    private final long MIN_SAVE_INTERVAL_MS = 50; // salva ogni 50 ms max
     private float steering = 0.0f;
-    private double lastSteering = 0;
-    private double lastSpeed = 0;
-    private double lastAngle = 0;
     private double currentAccel = 0.0;
     private double currentBrake = 0.0;
 
@@ -40,8 +37,15 @@ public class ManualDriver extends Controller {
                     case KeyEvent.VK_S -> brake = true;
                     case KeyEvent.VK_A -> left = true;
                     case KeyEvent.VK_D -> right = true;
-                    case KeyEvent.VK_UP -> gear++;
-                    case KeyEvent.VK_DOWN -> gear--;
+                    case KeyEvent.VK_UP -> {
+                        if (gear < 6)
+                            gear++;
+                    }
+                    case KeyEvent.VK_DOWN -> {
+                        if (gear > -1)
+                            gear--;
+                    }
+
                     case KeyEvent.VK_1 -> {
                         recording = true;
                         System.out.println("Scrittura attivata");
@@ -68,53 +72,14 @@ public class ManualDriver extends Controller {
     public Action control(SensorModel sensors) {
         Action action = new Action();
 
-        // Fading accelerate
-        if (accel) {
-            currentAccel = Math.min(1.0, currentAccel + 0.2);
-        } else {
-            currentAccel = Math.max(0.0, currentAccel - 0.2);
-        }
-
-        // Fading brake
-        if (brake) {
-            currentBrake = Math.min(0.5, currentBrake + 0.2);
-        } else {
-            currentBrake = Math.max(0.0, currentBrake - 0.2);
-        }
+        updateState();
 
         action.accelerate = currentAccel;
         action.brake = currentBrake;
 
-        double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
-        float steeringIntensity;
-        if (speed <= 40.0) {
-            steeringIntensity = 1.0f;
-        } else if (speed <= 100.0) {
-            steeringIntensity = 0.5f;
-        } else {
-            steeringIntensity = 0.2f;
-        }
-        float effectiveSteeringIntensity = (float) (steeringIntensity * (1.0 - currentBrake));
-
-        // aggiorna la variabile globale, non quella interna a action
-        if (left) {
-            steering = Math.min(1.0f, steering + 0.05f * effectiveSteeringIntensity);
-        } else if (right) {
-            steering = Math.max(-1.0f, steering - 0.05f);
-        } else {
-            if (steering > 0) {
-                steering = Math.max(0.0f, steering - 0.1f);
-            } else if (steering < 0) {
-                steering = Math.min(0.0f, steering + 0.1f);
-            }
-        }
+        double speed = sensors.getSpeed();
 
         action.steering = steering;
-
-        if (gear < -1)
-            gear = -1;
-        if (gear > 6)
-            gear = 6;
         action.gear = gear;
 
         action.clutch = clutching(sensors, clutch);
@@ -122,17 +87,7 @@ public class ManualDriver extends Controller {
         // Scrivi nel CSV solo se recording è attivo
         if (recording) {
             long currentTime = System.currentTimeMillis();
-            boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
-
-            double angle = sensors.getAngleToTrackAxis();
-            if (angle > 0.5 && currentBrake > 0.5) {
-                currentBrake *= 0.7; // attenua la frenata se l'angolo è troppo grande
-            }
-            if (sensors.getSpeed() < 30 && currentBrake > 0.8) {
-                currentBrake = 0.5; // limita la frenata se la velocità è bassa
-            }
-
-            if (timeElapsed) {
+            if (currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS) {
                 lastSaveTime = currentTime;
                 try {
                     File file = new File("dataset.csv");
@@ -145,7 +100,6 @@ public class ManualDriver extends Controller {
                                     "TrackLeft, TrackCenterLeft, TrackCenter, TrackCenterRight, TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering, Gear\n");
 
                         }
-
                         double[] trackSensors = sensors.getTrackEdgeSensors();
 
                         bw.write(
@@ -167,6 +121,7 @@ public class ManualDriver extends Controller {
                     e.printStackTrace();
                 }
             }
+
         }
         return action;
     }
@@ -221,5 +176,53 @@ public class ManualDriver extends Controller {
     @Override
     public float[] initAngles() {
         return super.initAngles();
+    }
+
+    // funzione aggiunta da Giuliano
+    private void updateState() {
+        // --- Accelerazione e frenata ---
+
+        if (accel) {
+            currentAccel += 0.2;
+            if (currentAccel > 1)
+                currentAccel = 1;
+        }
+
+        if (brake) {
+            currentAccel = Math.max(0, currentAccel - 0.4); // frenata = riduzione accelerazione
+            currentBrake += 0.2;
+            if (currentBrake > 1)
+                currentBrake = 1;
+        } else {
+            currentBrake -= 0.3;
+            if (currentBrake < 0)
+                currentBrake = 0;
+        }
+
+        // Decelerazione naturale se né accell né freno
+        if (!accel && !brake) {
+            currentAccel = Math.max(0, currentAccel - 0.2);
+        }
+
+        // --- Sterzo ---
+        if (left) {
+            steering += 0.2;
+            if (steering > 1)
+                steering = 1;
+        } else if (right) {
+            steering -= 0.2;
+            if (steering < -1)
+                steering = -1;
+        } else {
+            if (steering > 0) {
+                steering -= 0.5;
+                if (steering < 0)
+                    steering = 0;
+            } else if (steering < 0) {
+                steering += 0.5;
+                if (steering > 0)
+                    steering = 0;
+            }
+        }
     }
 }

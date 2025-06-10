@@ -10,6 +10,13 @@ public class SimpleDriver extends Controller {
 	private double[] min;
 	private double[] max;
 	private BufferedWriter logWriter;
+	// logging
+	private double[] lastRawInput = null;
+	private double lastSteer = 0;
+	private double lastAccel = 0;
+	private int lastGear = -999;
+	private static int stepCounter = 0;
+	private long lastTime = System.currentTimeMillis();
 
 	public SimpleDriver() {
 		try {
@@ -251,6 +258,7 @@ public class SimpleDriver extends Controller {
 					// velocità della macchina in km/h
 					sensors.getSpeed()
 			};
+
 			double[] input = new double[8];
 			for (int i = 0; i < 8; i++) {
 				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
@@ -263,36 +271,71 @@ public class SimpleDriver extends Controller {
 			double brake = classifier.predictBrake(input);
 
 			clutch = clutching(sensors, clutch);
+			long currentTime = System.currentTimeMillis();
+			double deltaTime = (currentTime - lastTime) / 1000.0; // in secondi
+			lastTime = currentTime;
 
-			try {
-				StringBuilder log = new StringBuilder();
+			boolean shouldLog = false;
 
-				// Valori raw
-				for (double val : rawInput) {
-					log.append(val).append(",");
+			// LOgging delle predizioni
+			// Controlla se è la prima volta che si registra l'input
+			// oppure se c'è una differenza significativa rispetto all'ultimo input
+			// Se è la prima volta, registra sempre
+			// Se c'è una differenza significativa, registra
+			// altrimenti non registra
+			if (lastRawInput == null) {
+				lastRawInput = new double[rawInput.length];
+				shouldLog = true;
+			} else {
+				for (int i = 0; i < rawInput.length; i++) {
+					if (Math.abs(rawInput[i] - lastRawInput[i]) > 1e-4) {
+						shouldLog = true;
+						break;
+					}
 				}
-				// Valori normalizzati
-				for (double val : input) {
-					log.append(val).append(",");
-				}
-				// Valori predetti
-				log.append(gear).append(",");
-				log.append(steer).append(",");
-				log.append(accel).append(",");
-				log.append(brake).append("\n");
 
-				logWriter.write(log.toString());
-				logWriter.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
+				if (Math.abs(steer - lastSteer) > 0.01 || Math.abs(accel - lastAccel) > 0.01 || gear != lastGear) {
+					shouldLog = true;
+				}
 			}
+
+			if (shouldLog) {
+				try {
+					StringBuilder log = new StringBuilder();
+					log.append(stepCounter++).append(",");
+					log.append(currentTime).append(",");
+					log.append(deltaTime).append(",");
+
+					for (double val : rawInput)
+						log.append(val).append(",");
+					for (double val : input)
+						log.append(val).append(",");
+
+					log.append(gear).append(",");
+					log.append(steer).append(",");
+					log.append(accel).append(",");
+					log.append(brake).append("\n");
+
+					logWriter.write(log.toString());
+					logWriter.flush();
+
+					System.arraycopy(rawInput, 0, lastRawInput, 0, rawInput.length);
+					lastSteer = steer;
+					lastAccel = accel;
+					lastGear = gear;
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			// Azione sempre eseguita, fuori dal blocco di logging
 			Action action = new Action();
 			action.gear = gear;
 			action.steering = steer;
 			action.accelerate = accel;
 			action.brake = brake;
 			action.clutch = clutch;
-
 			return action;
 		}
 
