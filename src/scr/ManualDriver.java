@@ -11,7 +11,7 @@ public class ManualDriver extends Controller {
     private float clutch = 0;
     private int gear = 1;
     private long lastSaveTime = 0;
-    private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 150 ms max
+    private final long MIN_SAVE_INTERVAL_MS = 100; // salva ogni 150 ms max
     private float steering = 0.0f;
     private double lastSteering = 0;
     private double lastSpeed = 0;
