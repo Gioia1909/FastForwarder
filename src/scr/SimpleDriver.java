@@ -14,7 +14,7 @@ public class SimpleDriver extends Controller {
 	public SimpleDriver() {
 		try {
 			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
-			classifier = new KNNClassifier(dataset, 30);
+			classifier = new KNNClassifier(dataset, 21);
 			double[][] minMax = DatasetLoader.loadMinMaxDaFile("min.txt", "max.txt");
 			logWriter = new BufferedWriter(new FileWriter("log_predizioni.csv"));
 			logWriter.write(
@@ -70,7 +70,7 @@ public class SimpleDriver extends Controller {
 		System.out.println("Restarting the race!");
 		try {
 			List<DataPoint> dataset = DatasetLoader.load("dataset.csv");
-			classifier = new KNNClassifier(dataset, 3); // oppure 1
+			classifier = new KNNClassifier(dataset, 41); // oppure 1
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
