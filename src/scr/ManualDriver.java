@@ -85,7 +85,7 @@ public class ManualDriver extends Controller {
         action.accelerate = currentAccel;
         action.brake = currentBrake;
 
-        double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
+        double speed = sensors.getSpeed(); 
         float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
         float effectiveSteeringIntensity = (float) (steeringIntensity * (1.0 - currentBrake));
 
