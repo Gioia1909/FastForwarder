@@ -94,7 +94,7 @@ public class ManualDriver extends Controller {
         action.clutch = clutching(sensors, clutch);
 
         // Scrivi nel CSV solo se recording è attivo
-        if (recording) {
+       if (recording) {
             long currentTime = System.currentTimeMillis();
             boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
 
@@ -102,16 +102,9 @@ public class ManualDriver extends Controller {
             speed = sensors.getSpeed(); // senza "double"
             double angle = sensors.getAngleToTrackAxis();
 
-            boolean significantChange = Math.abs(steering - lastSteering) > 0.01 ||
-                    Math.abs(speed - lastSpeed) > 2.0 ||
-                    Math.abs(angle - lastAngle) > 0.02;
-
-            if (timeElapsed && significantChange) {
+          
+            if (timeElapsed ) {
                 lastSaveTime = currentTime;
-                lastSteering = steering;
-                lastSpeed = speed;
-                lastAngle = angle;
-
                 try {
                     File file = new File("dataset.csv");
                     boolean fileExists = file.exists();
@@ -132,18 +125,19 @@ public class ManualDriver extends Controller {
                         double[] trackSensors = sensors.getTrackEdgeSensors();
 
                         bw.write(
-                                trackSensors[5] + "," +
-                                        trackSensors[7] + "," +
-                                        trackSensors[9] + "," +
-                                        trackSensors[11] + "," +
-                                        trackSensors[13] + "," +
-                                        sensors.getTrackPosition() + "," +
-                                        sensors.getAngleToTrackAxis() + "," +
-                                        speed + "," +
-                                        action.accelerate + "," +
-                                        action.brake + "," +
-                                        steering + "," +
-                                        action.gear + "\n");
+                            trackSensors[5] + "," +   
+                            trackSensors[7] + "," +   
+                            trackSensors[9] + "," +   
+                            trackSensors[11] + "," +  
+                            trackSensors[13] + "," +  
+                            sensors.getTrackPosition() + "," +
+                            sensors.getAngleToTrackAxis() + "," +
+                            speed + "," +
+                            action.accelerate + "," +
+                            action.brake + "," +
+                            steering + "," +
+                            action.gear + "\n"
+);
                     }
 
                 } catch (IOException e) {
@@ -153,6 +147,8 @@ public class ManualDriver extends Controller {
         }
         return action;
     }
+
+
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;
