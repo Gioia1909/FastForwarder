@@ -16,6 +16,8 @@ public class ManualDriver extends Controller {
     private double lastSteering = 0;
     private double lastSpeed = 0;
     private double lastAngle = 0;
+    private double currentAccel = 0.0;
+    private double currentBrake = 0.0;
 
     final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
     final int[] gearDown = { 0, 2500, 3000, 3000, 3500, 3500 };
@@ -66,8 +68,22 @@ public class ManualDriver extends Controller {
     public Action control(SensorModel sensors) {
         Action action = new Action();
 
-        action.accelerate = accel ? 1.0 : 0.0;
-        action.brake = brake ? 0.5 : 0.0;
+        // Fading accelerate
+        if (accel) {
+            currentAccel = Math.min(1.0, currentAccel + 0.2);
+        } else {
+            currentAccel = Math.max(0.0, currentAccel - 0.2);
+        }
+
+        // Fading brake
+        if (brake) {
+            currentBrake = Math.min(1.0, currentBrake + 0.2);
+        } else {
+            currentBrake = Math.max(0.0, currentBrake - 0.2);
+        }
+
+        action.accelerate = currentAccel;
+        action.brake = currentBrake;
 
         double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
         float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
