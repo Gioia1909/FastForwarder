@@ -11,7 +11,7 @@ public class ManualDriver extends Controller {
     private float clutch = 0;
     private int gear = 1;
     private long lastSaveTime = 0;
-    private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
+    private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 150 ms max
     private float steering = 0.0f;
     private double lastSteering = 0;
     private double lastSpeed = 0;
@@ -77,7 +77,7 @@ public class ManualDriver extends Controller {
 
         // Fading brake
         if (brake) {
-            currentBrake = Math.min(1.0, currentBrake + 0.2);
+            currentBrake = Math.min(0.5, currentBrake + 0.2);
         } else {
             currentBrake = Math.max(0.0, currentBrake - 0.2);
         }
@@ -93,11 +93,19 @@ public class ManualDriver extends Controller {
             steering = Math.min(1.0f, steering + 0.05f);
         } else if (right) {
             steering = Math.max(-1.0f, steering - 0.05f);
-        } else {
-            steering *= 0.8f;
-            if (Math.abs(steering) < 0.01f)
-                steering = 0.0f;
+        }  else { 
+    if (steering > 0) {
+        steering -= 0.5; // Ritorno rapido da sinistra
+        if (steering < 0) {
+            steering = 0;
         }
+    } else if (steering < 0) {
+        steering += 0.5; // Ritorno rapido da destra
+        if (steering > 0) {
+            steering = 0;
+        }
+    }
+}
 
         action.steering = steering;
 
