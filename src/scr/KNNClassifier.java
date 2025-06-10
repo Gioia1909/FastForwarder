@@ -20,7 +20,6 @@ public class KNNClassifier {
 
     private final List<DataPoint> dataset;
     private final int k;
-    
 
     public KNNClassifier(List<DataPoint> dataset, int k) {
         this.dataset = dataset;
@@ -39,6 +38,8 @@ public class KNNClassifier {
         return predictContinuous(input, "brake");
     }
 
+    // Metodo per previsione discreta: restituisce la marcia più frequente tra i k
+    // vicini
     public int predictGear(double[] input) {
         List<DataPoint> neighbors = new ArrayList<>(dataset);
         neighbors.sort(Comparator.comparingDouble(p -> euclidean(p.features, input)));

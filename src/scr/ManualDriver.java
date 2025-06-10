@@ -11,7 +11,7 @@ public class ManualDriver extends Controller {
     private float clutch = 0;
     private int gear = 1;
     private long lastSaveTime = 0;
-    private final long MIN_SAVE_INTERVAL_MS = 300; // salva ogni 300 ms max
+    private final long MIN_SAVE_INTERVAL_MS = 150; // salva ogni 300 ms max
     private float steering = 0.0f;
     private double lastSteering = 0;
     private double lastSpeed = 0;
@@ -87,12 +87,13 @@ public class ManualDriver extends Controller {
 
         double speed = sensors.getSpeed(); // puoi usare getSpeedX() se più preciso
         float steeringIntensity = (speed <= 40.0) ? 1.0f : 0.2f;
+        float effectiveSteeringIntensity = (float) (steeringIntensity * (1.0 - currentBrake));
 
         // aggiorna la variabile globale, non quella interna a action
         if (left) {
-            steering = Math.min(1.0f, steering + 0.05f);
+            steering = Math.min(1.0f, steering + 0.05f * effectiveSteeringIntensity);
         } else if (right) {
-            steering = Math.max(-1.0f, steering - 0.05f);
+            steering = Math.max(-1.0f, steering - 0.05f * effectiveSteeringIntensity);
         } else {
             steering *= 0.8f;
             if (Math.abs(steering) < 0.01f)
@@ -110,16 +111,21 @@ public class ManualDriver extends Controller {
         action.clutch = clutching(sensors, clutch);
 
         // Scrivi nel CSV solo se recording è attivo
-       if (recording) {
+        if (recording) {
             long currentTime = System.currentTimeMillis();
             boolean timeElapsed = currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS;
 
             double steering = action.steering;
             speed = sensors.getSpeed(); // senza "double"
             double angle = sensors.getAngleToTrackAxis();
+            if (angle > 0.5 && currentBrake > 0.5) {
+                currentBrake *= 0.7; // attenua la frenata se l'angolo è troppo grande
+            }
+            if (sensors.getSpeed() < 30 && currentBrake > 0.8) {
+                currentBrake = 0.5; // limita la frenata se la velocità è bassa
+            }
 
-          
-            if (timeElapsed ) {
+            if (timeElapsed) {
                 lastSaveTime = currentTime;
                 try {
                     File file = new File("dataset.csv");
@@ -141,19 +147,18 @@ public class ManualDriver extends Controller {
                         double[] trackSensors = sensors.getTrackEdgeSensors();
 
                         bw.write(
-                            trackSensors[5] + "," +   
-                            trackSensors[7] + "," +   
-                            trackSensors[9] + "," +   
-                            trackSensors[11] + "," +  
-                            trackSensors[13] + "," +  
-                            sensors.getTrackPosition() + "," +
-                            sensors.getAngleToTrackAxis() + "," +
-                            speed + "," +
-                            action.accelerate + "," +
-                            action.brake + "," +
-                            steering + "," +
-                            action.gear + "\n"
-);
+                                trackSensors[5] + "," +
+                                        trackSensors[7] + "," +
+                                        trackSensors[9] + "," +
+                                        trackSensors[11] + "," +
+                                        trackSensors[13] + "," +
+                                        sensors.getTrackPosition() + "," +
+                                        sensors.getAngleToTrackAxis() + "," +
+                                        speed + "," +
+                                        action.accelerate + "," +
+                                        action.brake + "," +
+                                        steering + "," +
+                                        action.gear + "\n");
                     }
 
                 } catch (IOException e) {
@@ -163,8 +168,6 @@ public class ManualDriver extends Controller {
         }
         return action;
     }
-
-
 
     private float clutching(SensorModel sensors, float clutch) {
         final float clutchMax = 0.5f;
