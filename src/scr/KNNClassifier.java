@@ -27,15 +27,35 @@ public class KNNClassifier {
     }
 
     public double predictSteering(double[] input) {
-        return predictContinuous(input, "steering");
+        double steer = predictContinuous(input, "steering");
+        // If the predicted steering is very small but the angle to the track
+        // axis is noticeable, recompute it using a simple heuristic similar to
+        // SimpleDriver#getSteer
+        if (Math.abs(steer) < 0.05 && Math.abs(input[6]) > 0.1) {
+            double targetAngle = input[6] - input[5] * 0.5;
+            steer = targetAngle / 0.785398;
+            // clamp the value in [-1,1]
+            steer = Math.max(-1.0, Math.min(1.0, steer));
+        }
+        return steer;
     }
 
     public double predictAccelerate(double[] input) {
-        return predictContinuous(input, "accelerate");
+        double accel = predictContinuous(input, "accelerate");
+        // If the classifier predicts a very small acceleration but the track
+        // ahead is clear (center sensor high) force a stronger acceleration
+        if (accel < 0.2 && input[2] > 0.8)
+            accel = 1.0;
+        return accel;
     }
 
     public double predictBrake(double[] input) {
-        return predictContinuous(input, "brake");
+        double brake = predictContinuous(input, "brake");
+        // If braking is predicted to be very low but the distance in front is
+        // short, apply a moderate brake
+        if (brake < 0.1 && input[2] < 0.3)
+            brake = 0.5;
+        return brake;
     }
 
     // Metodo per previsione discreta: restituisce la marcia più frequente tra i k
@@ -44,6 +64,8 @@ public class KNNClassifier {
         List<DataPoint> neighbors = new ArrayList<>(dataset);
         neighbors.sort(Comparator.comparingDouble(p -> euclidean(p.features, input)));
 
+        if (input[7] < 0.017)
+            return 1;
         // Mappa per contare la frequenza di ciascuna marcia tra i k vicini
         Map<Integer, Integer> gearCount = new HashMap<>();
 
@@ -56,6 +78,7 @@ public class KNNClassifier {
         return gearCount.entrySet().stream()
                 .max(Comparator.comparingInt(Map.Entry::getValue))
                 .get().getKey();
+
     }
 
     // cerco i k punti del dataset con feature simili all'input
