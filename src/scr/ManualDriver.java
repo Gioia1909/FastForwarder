@@ -74,14 +74,22 @@ public class ManualDriver extends Controller {
 
         // aggiorna la variabile globale, non quella interna a action
         if (left) {
-            steering = Math.min(1.0f, steering + 0.05f);
+            steering = Math.min(1.0f, steering + 0.2f);
         } else if (right) {
-            steering = Math.max(-1.0f, steering - 0.05f);
-        } else {
-            steering *= 0.8f;
-            if (Math.abs(steering) < 0.01f)
-                steering = 0.0f;
+            steering = Math.max(-1.0f, steering - 0.2f);
+        }  else { 
+    if (steering > 0) {
+        steering -= 0.5; // Ritorno rapido da sinistra
+        if (steering < 0) {
+            steering = 0;
         }
+    } else if (steering < 0) {
+        steering += 0.5; // Ritorno rapido da destra
+        if (steering > 0) {
+            steering = 0;
+        }
+    }
+}
 
         action.steering = steering;
 
