@@ -247,31 +247,33 @@ public class SimpleDriver extends Controller {
 			for (int i = 0; i < DatasetLoader.FEATURE_INDICES.length; i++) {
 				int idx = DatasetLoader.FEATURE_INDICES[i];
 				switch (idx) {
-					//case DatasetLoader.IDX_DISTANCE -> rawInput[i] = sensors.getDistanceFromStartLine();
-					//case DatasetLoader.IDX_TRACK3 -> rawInput[i] = track[3];
-					//case DatasetLoader.IDX_TRACK4 -> rawInput[i] = track[4];
+					// case DatasetLoader.IDX_DISTANCE -> rawInput[i] =
+					// sensors.getDistanceFromStartLine();
+					// case DatasetLoader.IDX_TRACK3 -> rawInput[i] = track[3];
+					// case DatasetLoader.IDX_TRACK4 -> rawInput[i] = track[4];
 					case DatasetLoader.IDX_TRACK5 -> rawInput[i] = track[5];
-					//case DatasetLoader.IDX_TRACK6 -> rawInput[i] = track[6];
+					// case DatasetLoader.IDX_TRACK6 -> rawInput[i] = track[6];
 					case DatasetLoader.IDX_TRACK7 -> rawInput[i] = track[7];
-					//case DatasetLoader.IDX_TRACK8 -> rawInput[i] = track[8];
+					// case DatasetLoader.IDX_TRACK8 -> rawInput[i] = track[8];
 					case DatasetLoader.IDX_TRACK9 -> rawInput[i] = track[9];
-					//case DatasetLoader.IDX_TRACK10 -> rawInput[i] = track[10];
+					// case DatasetLoader.IDX_TRACK10 -> rawInput[i] = track[10];
 					case DatasetLoader.IDX_TRACK11 -> rawInput[i] = track[11];
-					//case DatasetLoader.IDX_TRACK12 -> rawInput[i] = track[12];
+					// case DatasetLoader.IDX_TRACK12 -> rawInput[i] = track[12];
 					case DatasetLoader.IDX_TRACK13 -> rawInput[i] = track[13];
-					//case DatasetLoader.IDX_TRACK14 -> rawInput[i] = track[14];
-					//case DatasetLoader.IDX_TRACK15 -> rawInput[i] = track[15];
-					//case DatasetLoader.IDX_TRACK16 -> rawInput[i] = track[16];
-					//case DatasetLoader.IDX_FOCUS1 -> rawInput[i] = focus[1];
-					//case DatasetLoader.IDX_FOCUS2 -> rawInput[i] = focus[2];
-					//case DatasetLoader.IDX_FOCUS3 -> rawInput[i] = focus[3];
+					// case DatasetLoader.IDX_TRACK14 -> rawInput[i] = track[14];
+					// case DatasetLoader.IDX_TRACK15 -> rawInput[i] = track[15];
+					// case DatasetLoader.IDX_TRACK16 -> rawInput[i] = track[16];
+					// case DatasetLoader.IDX_FOCUS1 -> rawInput[i] = focus[1];
+					// case DatasetLoader.IDX_FOCUS2 -> rawInput[i] = focus[2];
+					// case DatasetLoader.IDX_FOCUS3 -> rawInput[i] = focus[3];
 					case DatasetLoader.IDX_TRACK_POS -> rawInput[i] = sensors.getTrackPosition();
 					case DatasetLoader.IDX_ANGLE -> rawInput[i] = sensors.getAngleToTrackAxis();
 					case DatasetLoader.IDX_SPEED -> rawInput[i] = sensors.getSpeed();
 					case DatasetLoader.IDX_SPEEDY -> rawInput[i] = sensors.getLateralSpeed();
-					//case DatasetLoader.IDX_DAMAGE -> rawInput[i] = sensors.getDamage();
-					//case DatasetLoader.IDX_DISTANCE_RACED -> rawInput[i] = sensors.getDistanceRaced();
-					//case DatasetLoader.IDX_RPM -> rawInput[i] = sensors.getRPM();
+					// case DatasetLoader.IDX_DAMAGE -> rawInput[i] = sensors.getDamage();
+					// case DatasetLoader.IDX_DISTANCE_RACED -> rawInput[i] =
+					// sensors.getDistanceRaced();
+					// case DatasetLoader.IDX_RPM -> rawInput[i] = sensors.getRPM();
 					default -> rawInput[i] = 0.0;
 				}
 
@@ -283,12 +285,10 @@ public class SimpleDriver extends Controller {
 				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
 			}
 
-			int gear = classifier.predictGear(input);
+			int gear = classifier.predictGear(input, sensors.getRPM(), sensors.getGear());
 			double steer = classifier.predictSteering(input);
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);
-
-			
 
 			lastSteer = steer;
 			lastAccel = accel;
@@ -342,16 +342,19 @@ public class SimpleDriver extends Controller {
 			action.brake = brake;
 			action.clutch = clutch;
 
-			/*if (Math.abs(steer) > 0.3) {
-				int dynamicFocus = (int) Math.round(steer * 90);
-				action.focus = Math.max(-90, Math.min(90, dynamicFocus));
-			} else {
-				action.focus = 0;
-			}
-
-			if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 30) {
-				accel *= 0.5;
-			}*/
+			/*
+			 * if (Math.abs(steer) > 0.3) {
+			 * int dynamicFocus = (int) Math.round(steer * 90);
+			 * action.focus = Math.max(-90, Math.min(90, dynamicFocus));
+			 * } else {
+			 * action.focus = 0;
+			 * }
+			 * 
+			 * if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 30)
+			 * {
+			 * accel *= 0.5;
+			 * }
+			 */
 
 			return action;
 		}

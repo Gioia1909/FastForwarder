@@ -24,15 +24,35 @@ public class KNNClassifier {
         return predictContinuous(input, "brake");
     }
 
-    public int predictGear(double[] input) {
+    public int predictGear(double[] input, double rpm, int currentGear) {
         List<DataPoint> neighbors = tree.findKNearest(input, k);
-        Map<Integer, Integer> gearCount = new HashMap<>();
+
+        Map<Integer, Integer> gearVotes = new HashMap<>();
         for (DataPoint dp : neighbors) {
-            gearCount.put(dp.gear, gearCount.getOrDefault(dp.gear, 0) + 1);
+            gearVotes.put(dp.gear, gearVotes.getOrDefault(dp.gear, 0) + 1);
         }
-        return gearCount.entrySet().stream()
+
+        // Marcia più votata
+        int predicted = gearVotes.entrySet().stream()
                 .max(Comparator.comparingInt(Map.Entry::getValue))
                 .get().getKey();
+
+        // Controllo di sicurezza per evitare -1 e 0
+        if (predicted < 1)
+            predicted = 1;
+
+        // Logica di regolazione fine (simile a getGear)
+        if (currentGear < 1) {
+            return 1;
+        }
+
+        if (currentGear < 6 && rpm >= gearUp[currentGear - 1]) {
+            return currentGear + 1;
+        } else if (currentGear > 1 && rpm <= gearDown[currentGear - 1]) {
+            return currentGear - 1;
+        }
+
+        return predicted;
     }
 
     private double predictContinuous(double[] input, String target) {
