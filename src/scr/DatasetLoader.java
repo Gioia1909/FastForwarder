@@ -3,6 +3,8 @@ package scr;
 import java.io.*;
 import java.util.*;
 
+//VERSIONE CON DISTANZA
+
 public class DatasetLoader {
     // legge ogni riga del CSV, normalizza gli 8 input, crea DataPoint
     public static List<DataPoint> load(String path) throws IOException {
@@ -20,20 +22,36 @@ public class DatasetLoader {
 
         while ((line = br.readLine()) != null) {
             String[] tokens = line.trim().split(",");
-            if (tokens.length < 12)
+            if (tokens.length < 16)
                 continue;
 
             try {
-                double[] input = new double[8];
-                for (int i = 0; i < 8; i++) {
+                // NUOVA AGGIUNTA : DISTANZA
+                double[] input = new double[12]; // 8 input + 1 distanza
+
+                // double[] input = new double[8];
+
+                // NUOVA AGGIUNTA : DISTANZA
+                for (int i = 0; i < 12; i++) {
+
+                    // for (int i = 0; i < 8; i++) {
                     double valore = Double.parseDouble(tokens[i]);
                     input[i] = (max[i] != min[i]) ? (valore - min[i]) / (max[i] - min[i]) : 0.0;
                 }
 
-                double accel = Double.parseDouble(tokens[8]);
-                double brake = Double.parseDouble(tokens[9]);
-                double steer = Double.parseDouble(tokens[10]);
-                int gear = Integer.parseInt(tokens[11]);
+                /*
+                 * PRIMA VERSIONE SENZA DISTANZA
+                 * double accel = Double.parseDouble(tokens[8]);
+                 * double brake = Double.parseDouble(tokens[9]);
+                 * double steer = Double.parseDouble(tokens[10]);
+                 * int gear = Integer.parseInt(tokens[11]);
+                 */
+
+                // NUOVA AGGIUNTA : DISTANZA
+                double accel = Double.parseDouble(tokens[12]);
+                double brake = Double.parseDouble(tokens[13]);
+                double steer = Double.parseDouble(tokens[14]);
+                int gear = Integer.parseInt(tokens[15]);
 
                 dataset.add(new DataPoint(input, steer, accel, brake, gear));
             } catch (NumberFormatException e) {
@@ -50,18 +68,33 @@ public class DatasetLoader {
         String line;
         br.readLine(); // salta intestazione
 
-        double[] min = new double[8];
-        double[] max = new double[8];
+        // NUOVA AGGIUNTA : DISTANZA
+        double[] min = new double[12];
+        double[] max = new double[12];
+
+        /*
+         * PRIMA VERSIONE SENZA DISTANZA
+         * double[] min = new double[8];
+         * double[] max = new double[8];
+         */
         Arrays.fill(min, Double.POSITIVE_INFINITY);
         Arrays.fill(max, Double.NEGATIVE_INFINITY);
 
         while ((line = br.readLine()) != null) {
             String[] tokens = line.trim().split(",");
-            if (tokens.length < 8)
+
+            // NUOVA AGGIUNTA : DISTANZA
+            if (tokens.length < 16)
+                // VERSIONE SENZA DISTANZA
+                // if (tokens.length < 8)
                 continue;
 
             try {
-                for (int i = 0; i < 8; i++) {
+                // NUOVA AGGIUNTA : DISTANZA
+                for (int i = 0; i < 12; i++) {
+
+                    // VERSIONE SENZA DISTANZA
+                    /* for (int i = 0; i < 8; i++) { */
                     double val = Double.parseDouble(tokens[i]);
                     if (val < min[i])
                         min[i] = val;
@@ -90,12 +123,23 @@ public class DatasetLoader {
     }
 
     public static double[][] loadMinMaxDaFile(String minPath, String maxPath) throws IOException {
-        double[] min = new double[8];
-        double[] max = new double[8];
+        /** NUOVA AGGIUNTA : DISTANZA */
+        double[] min = new double[12];
+        double[] max = new double[12];
+
+        /*
+         * double[] min = new double[8];
+         * double[] max = new double[8];
+         */
 
         BufferedReader minIn = new BufferedReader(new FileReader(minPath));
         BufferedReader maxIn = new BufferedReader(new FileReader(maxPath));
-        for (int i = 0; i < 8; i++) {
+
+        // NUOVA AGGIUNTA : DISTANZA
+        for (int i = 0; i < 12; i++) {
+
+            // VERSIONE SENZA DISTANZA
+            // for (int i = 0; i < 8; i++) {
             min[i] = Double.parseDouble(minIn.readLine());
             max[i] = Double.parseDouble(maxIn.readLine());
         }

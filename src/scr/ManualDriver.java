@@ -82,6 +82,9 @@ public class ManualDriver extends Controller {
         action.steering = steering;
         action.gear = gear;
 
+        /** NUOVA AGGIUNTA DISTANZA */
+        double distance = sensors.getDistanceFromStartLine();
+
         action.clutch = clutching(sensors, clutch);
 
         // Scrivi nel CSV solo se recording è attivo
@@ -89,6 +92,7 @@ public class ManualDriver extends Controller {
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastSaveTime >= MIN_SAVE_INTERVAL_MS) {
                 lastSaveTime = currentTime;
+
                 try {
                     File file = new File("dataset.csv");
                     boolean fileExists = file.exists();
@@ -96,18 +100,27 @@ public class ManualDriver extends Controller {
 
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
                         if (!fileExists || fileIsEmpty) {
+                            /** NUOVA AGGIUNTA DISTANZA */
                             bw.write(
-                                    "TrackLeft, TrackCenterLeft, TrackCenter, TrackCenterRight, TrackRight,TrackPosition,AngleToTrackAxis,Speed,Accelerate,Brake,Steering, Gear\n");
-
+                                    "Distanza,TrackLeft,TrackCenterLeft,TrackCenter,TrackCenterRight,TrackRight," +
+                                            "FocusLeft,FocusCenter,FocusRight," +
+                                            "TrackPosition,AngleToTrackAxis,Speed," +
+                                            "Accelerate,Brake,Steering,Gear\n");
                         }
                         double[] trackSensors = sensors.getTrackEdgeSensors();
+                        double[] focusSensors = sensors.getFocusSensors();
 
                         bw.write(
-                                trackSensors[5] + "," +
+                                /** NUOVA AGGIUNTA DISTANZA */
+                                distance + "," +
+                                        trackSensors[5] + "," +
                                         trackSensors[7] + "," +
                                         trackSensors[9] + "," +
                                         trackSensors[11] + "," +
                                         trackSensors[13] + "," +
+                                        focusSensors[1] + "," + // Focus sinistra
+                                        focusSensors[2] + "," + // Focus centro
+                                        focusSensors[3] + "," + // Focus destra
                                         sensors.getTrackPosition() + "," +
                                         sensors.getAngleToTrackAxis() + "," +
                                         speed + "," +

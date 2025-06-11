@@ -241,15 +241,20 @@ public class SimpleDriver extends Controller {
 
 		else // Auto non bloccata
 		{
+			double[] focus = sensors.getFocusSensors();
 			double[] rawInput = {
 					// Indicano la distanza in metri dal bordo della pista in una specifica
 					// direzione.
-
+					// AGGIUNTA DISTANZA
+					sensors.getDistanceFromStartLine(), // nuova prima feature
 					sensors.getTrackEdgeSensors()[5],
 					sensors.getTrackEdgeSensors()[7],
 					sensors.getTrackEdgeSensors()[9],
 					sensors.getTrackEdgeSensors()[11],
 					sensors.getTrackEdgeSensors()[13],
+					focus[1], // 6 – focus sinistra
+					focus[2], // 7 – focus centro
+					focus[3], // 8 – focus destra
 					// posizione della macchina rispetto alla carreggiata (centro pista = 0,
 					// sinistra -1, destra +1, > 1.0 fuori pista)
 					sensors.getTrackPosition(),
@@ -259,8 +264,22 @@ public class SimpleDriver extends Controller {
 					sensors.getSpeed()
 			};
 
-			double[] input = new double[8];
-			for (int i = 0; i < 8; i++) {
+			// NUOVA AGGIUNTA DISTANZA
+			// double[] input = new double[9];
+
+			// VECCHIA VERSIONE SENZA DISTANZA
+			// double[] input = new double[8];
+
+			// DOPO AGGIUNTA DEI SENSORI
+			double[] input = new double[12];
+			for (int i = 0; i < 12; i++) {
+				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
+			}
+
+			// NUOVA AGGIUNTA DISTANZA
+			for (int i = 0; i < 12; i++) {
+				// VECCHIA VERSIONE SENZA DISTANZA
+				// for (int i = 0; i < 8; i++) {
 				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
 			}
 
@@ -270,6 +289,26 @@ public class SimpleDriver extends Controller {
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);
 
+			/* NUOVA AGGIUNTA */
+
+			// se il valore di sterzata predetto cambia troppo
+			// rispetto a quella di prima, proviamo a mantenere quello precedente
+			// Usa lastSteer anche se non fai log
+			if (Math.abs(steer - lastSteer) > 0.5) {
+				steer = lastSteer; // smorza
+			}
+
+			// Riduci accelerazione in curva
+			if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 40) {
+				accel *= 0.6;
+			}
+
+			// AGGIORNA SEMPRE I LAST, NON SOLO PER LOG
+			lastSteer = steer;
+			lastAccel = accel;
+			lastGear = gear;
+
+			/* CCOME PRIMA */
 			clutch = clutching(sensors, clutch);
 			long currentTime = System.currentTimeMillis();
 			double deltaTime = (currentTime - lastTime) / 1000.0; // in secondi
@@ -320,9 +359,13 @@ public class SimpleDriver extends Controller {
 					logWriter.flush();
 
 					System.arraycopy(rawInput, 0, lastRawInput, 0, rawInput.length);
-					lastSteer = steer;
-					lastAccel = accel;
-					lastGear = gear;
+
+					/*
+					 * PRIMA STAVANO QUA
+					 * lastSteer = steer;
+					 * lastAccel = accel;
+					 * lastGear = gear;
+					 */
 
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -336,6 +379,17 @@ public class SimpleDriver extends Controller {
 			action.accelerate = accel;
 			action.brake = brake;
 			action.clutch = clutch;
+			// Imposta il focus per guardare nella direzione della curva
+			if (Math.abs(steer) > 0.3) {
+				int dynamicFocus = (int) Math.round(steer * 90);
+				action.focus = Math.max(-90, Math.min(90, dynamicFocus));
+			} else {
+				action.focus = 0;
+			}
+			// Rallenta in curva per evitare derapate
+			if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 30) {
+				accel *= 0.5;
+			}
 			return action;
 		}
 
