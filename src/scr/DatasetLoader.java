@@ -40,16 +40,17 @@ public class DatasetLoader {
 
     // Seleziona qui le feature da usare come input
     public static final int[] FEATURE_INDICES = {
-            
-              IDX_TRACK5,  IDX_TRACK7,
-            IDX_TRACK9,  IDX_TRACK11, IDX_TRACK13, 
-            
-            
-            IDX_TRACK_POS, IDX_ANGLE, IDX_SPEED, IDX_SPEEDY,
-             
+            IDX_DISTANCE,
+            IDX_TRACK5, IDX_TRACK7,
+            IDX_TRACK9, IDX_TRACK11, IDX_TRACK13,
+            IDX_TRACK_POS, IDX_ANGLE, IDX_SPEED, IDX_SPEEDY, IDX_RPM
+
     };
-//, IDX_RPM,IDX_DAMAGE, IDX_TRACK4, IDX_TRACK6, IDX_TRACK8,IDX_TRACK10,  IDX_TRACK12, IDX_TRACK14,
-// IDX_TRACK16, IDX_FOCUS1, IDX_FOCUS2, IDX_FOCUS3, IDX_DISTANCE, IDX_TRACK3, IDX_TRACK15, IDX_DISTANCE_RACED
+
+    // , IDX_RPM,IDX_DAMAGE, IDX_TRACK4, IDX_TRACK6, IDX_TRACK8,IDX_TRACK10,
+    // IDX_TRACK12, IDX_TRACK14,
+    // IDX_TRACK16, IDX_FOCUS1, IDX_FOCUS2, IDX_FOCUS3, IDX_DISTANCE, IDX_TRACK3,
+    // IDX_TRACK15, IDX_DISTANCE_RACED
     public static List<DataPoint> load(String path) throws IOException {
         List<DataPoint> dataset = new ArrayList<>();
 
