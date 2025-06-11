@@ -76,17 +76,21 @@ public class ManualDriver extends Controller {
 
         action.accelerate = currentAccel;
         action.brake = currentBrake;
-
-        double speed = sensors.getSpeed();
-
         action.steering = steering;
         action.gear = gear;
-
-        /** NUOVA AGGIUNTA DISTANZA */
-        double distance = sensors.getDistanceFromStartLine();
-
         action.clutch = clutching(sensors, clutch);
 
+        double speed = sensors.getSpeed();
+        double speedY = sensors.getLateralSpeed();
+        double distance = sensors.getDistanceFromStartLine();
+
+        // Imposta il focus per attivare i sensori focus (obbligatorio)
+        if (Math.abs(steering) > 0.3) {
+            int dynamicFocus = (int) Math.round(steering * 90);
+            action.focus = Math.max(-90, Math.min(90, dynamicFocus));
+        } else {
+            action.focus = 0;
+        }
         // Scrivi nel CSV solo se recording è attivo
         if (recording) {
             long currentTime = System.currentTimeMillis();
@@ -99,43 +103,67 @@ public class ManualDriver extends Controller {
                     boolean fileIsEmpty = file.length() == 0;
 
                     try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, true))) {
+
                         if (!fileExists || fileIsEmpty) {
-                            /** NUOVA AGGIUNTA DISTANZA */
                             bw.write(
-                                    "Distanza,TrackLeft,TrackCenterLeft,TrackCenter,TrackCenterRight,TrackRight," +
-                                            "FocusLeft,FocusCenter,FocusRight," +
-                                            "TrackPosition,AngleToTrackAxis,Speed," +
+                                    "Distanza," +
+                                            "Track3,Track4,Track5,Track6,Track7,Track8,Track9,Track10,Track11,Track12,Track13,Track14,Track15,Track16,"
+                                            +
+                                            "Focus1,Focus2,Focus3," +
+                                            "TrackPosition,AngleToTrackAxis,Speed,SpeedY,Damage," +
+                                            "DistanceRaced,RPM," +
                                             "Accelerate,Brake,Steering,Gear\n");
                         }
+
                         double[] trackSensors = sensors.getTrackEdgeSensors();
                         double[] focusSensors = sensors.getFocusSensors();
 
-                        bw.write(
-                                /** NUOVA AGGIUNTA DISTANZA */
-                                distance + "," +
-                                        trackSensors[5] + "," +
-                                        trackSensors[7] + "," +
-                                        trackSensors[9] + "," +
-                                        trackSensors[11] + "," +
-                                        trackSensors[13] + "," +
-                                        focusSensors[1] + "," + // Focus sinistra
-                                        focusSensors[2] + "," + // Focus centro
-                                        focusSensors[3] + "," + // Focus destra
-                                        sensors.getTrackPosition() + "," +
-                                        sensors.getAngleToTrackAxis() + "," +
-                                        speed + "," +
-                                        action.accelerate + "," +
-                                        action.brake + "," +
-                                        action.steering + "," +
-                                        action.gear + "\n");
+                        double damage = sensors.getDamage();
+                        double distanceRaced = sensors.getDistanceRaced();
+                        double rpm = sensors.getRPM();
+
+                        // Sicurezza
+                        if (trackSensors.length < 17 || focusSensors.length < 5) {
+                            System.err.println("Errore: array sensori non sufficienti!");
+                            return action;
+                        }
+
+                        // Scrittura dati
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(distance).append(",");
+
+                        // TrackEdgeSensors 3–16
+                        for (int i = 3; i <= 16; i++) {
+                            sb.append(trackSensors[i]).append(",");
+                        }
+
+                        // FocusSensors 0–4
+                        for (int i = 1; i <= 3; i++) {
+                            sb.append(focusSensors[i]).append(",");
+                        }
+
+                        sb.append(sensors.getTrackPosition()).append(",");
+                        sb.append(sensors.getAngleToTrackAxis()).append(",");
+                        sb.append(speed).append(",");
+                        sb.append(speedY).append(",");
+                        sb.append(damage).append(",");
+                        sb.append(distanceRaced).append(",");
+                        sb.append(rpm).append(",");
+
+                        sb.append(action.accelerate).append(",");
+                        sb.append(action.brake).append(",");
+                        sb.append(action.steering).append(",");
+                        sb.append(action.gear).append("\n");
+
+                        bw.write(sb.toString());
                     }
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-
         }
+
         return action;
     }
 

@@ -3,14 +3,55 @@ package scr;
 import java.io.*;
 import java.util.*;
 
-//VERSIONE CON DISTANZA
-
 public class DatasetLoader {
-    // legge ogni riga del CSV, normalizza gli 8 input, crea DataPoint
+    // Indici delle colonne nel CSV
+    public static final int IDX_DISTANCE = 0;
+    public static final int IDX_TRACK3 = 1;
+    public static final int IDX_TRACK4 = 2;
+    public static final int IDX_TRACK5 = 3;
+    public static final int IDX_TRACK6 = 4;
+    public static final int IDX_TRACK7 = 5;
+    public static final int IDX_TRACK8 = 6;
+    public static final int IDX_TRACK9 = 7;
+    public static final int IDX_TRACK10 = 8;
+    public static final int IDX_TRACK11 = 9;
+    public static final int IDX_TRACK12 = 10;
+    public static final int IDX_TRACK13 = 11;
+    public static final int IDX_TRACK14 = 12;
+    public static final int IDX_TRACK15 = 13;
+    public static final int IDX_TRACK16 = 14;
+
+    public static final int IDX_FOCUS1 = 15;
+    public static final int IDX_FOCUS2 = 16;
+    public static final int IDX_FOCUS3 = 17;
+
+    public static final int IDX_TRACK_POS = 18;
+    public static final int IDX_ANGLE = 19;
+    public static final int IDX_SPEED = 20;
+    public static final int IDX_SPEEDY = 21;
+    public static final int IDX_DAMAGE = 22;
+    public static final int IDX_DISTANCE_RACED = 23;
+    public static final int IDX_RPM = 24;
+
+    public static final int IDX_ACCEL = 25;
+    public static final int IDX_BRAKE = 26;
+    public static final int IDX_STEER = 27;
+    public static final int IDX_GEAR = 28;
+
+    // Seleziona qui le feature da usare come input
+    public static final int[] FEATURE_INDICES = {
+            IDX_DISTANCE,
+            IDX_TRACK3, IDX_TRACK4, IDX_TRACK5, IDX_TRACK6, IDX_TRACK7, IDX_TRACK8,
+            IDX_TRACK9, IDX_TRACK10, IDX_TRACK11, IDX_TRACK12, IDX_TRACK13, IDX_TRACK14,
+            IDX_TRACK15, IDX_TRACK16,
+            IDX_FOCUS1, IDX_FOCUS2, IDX_FOCUS3,
+            IDX_TRACK_POS, IDX_ANGLE, IDX_SPEED, IDX_SPEEDY,
+            IDX_DAMAGE, IDX_DISTANCE_RACED, IDX_RPM
+    };
+
     public static List<DataPoint> load(String path) throws IOException {
         List<DataPoint> dataset = new ArrayList<>();
 
-        // Calcola min e max
         double[][] minMax = calcolaMinMax(path);
         salvaMinMaxSuFile(minMax);
         double[] min = minMax[0];
@@ -22,36 +63,21 @@ public class DatasetLoader {
 
         while ((line = br.readLine()) != null) {
             String[] tokens = line.trim().split(",");
-            if (tokens.length < 16)
+            if (tokens.length <= IDX_GEAR)
                 continue;
 
             try {
-                // NUOVA AGGIUNTA : DISTANZA
-                double[] input = new double[12]; // 8 input + 1 distanza
-
-                // double[] input = new double[8];
-
-                // NUOVA AGGIUNTA : DISTANZA
-                for (int i = 0; i < 12; i++) {
-
-                    // for (int i = 0; i < 8; i++) {
-                    double valore = Double.parseDouble(tokens[i]);
-                    input[i] = (max[i] != min[i]) ? (valore - min[i]) / (max[i] - min[i]) : 0.0;
+                double[] input = new double[FEATURE_INDICES.length];
+                for (int i = 0; i < FEATURE_INDICES.length; i++) {
+                    int idx = FEATURE_INDICES[i];
+                    double valore = Double.parseDouble(tokens[idx]);
+                    input[i] = (max[idx] != min[idx]) ? (valore - min[idx]) / (max[idx] - min[idx]) : 0.0;
                 }
 
-                /*
-                 * PRIMA VERSIONE SENZA DISTANZA
-                 * double accel = Double.parseDouble(tokens[8]);
-                 * double brake = Double.parseDouble(tokens[9]);
-                 * double steer = Double.parseDouble(tokens[10]);
-                 * int gear = Integer.parseInt(tokens[11]);
-                 */
-
-                // NUOVA AGGIUNTA : DISTANZA
-                double accel = Double.parseDouble(tokens[12]);
-                double brake = Double.parseDouble(tokens[13]);
-                double steer = Double.parseDouble(tokens[14]);
-                int gear = Integer.parseInt(tokens[15]);
+                double accel = Double.parseDouble(tokens[IDX_ACCEL]);
+                double brake = Double.parseDouble(tokens[IDX_BRAKE]);
+                double steer = Double.parseDouble(tokens[IDX_STEER]);
+                int gear = Integer.parseInt(tokens[IDX_GEAR]);
 
                 dataset.add(new DataPoint(input, steer, accel, brake, gear));
             } catch (NumberFormatException e) {
@@ -66,35 +92,21 @@ public class DatasetLoader {
     public static double[][] calcolaMinMax(String path) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(path));
         String line;
-        br.readLine(); // salta intestazione
+        br.readLine();
 
-        // NUOVA AGGIUNTA : DISTANZA
-        double[] min = new double[12];
-        double[] max = new double[12];
-
-        /*
-         * PRIMA VERSIONE SENZA DISTANZA
-         * double[] min = new double[8];
-         * double[] max = new double[8];
-         */
+        int numCols = IDX_GEAR + 1;
+        double[] min = new double[numCols];
+        double[] max = new double[numCols];
         Arrays.fill(min, Double.POSITIVE_INFINITY);
         Arrays.fill(max, Double.NEGATIVE_INFINITY);
 
         while ((line = br.readLine()) != null) {
             String[] tokens = line.trim().split(",");
-
-            // NUOVA AGGIUNTA : DISTANZA
-            if (tokens.length < 16)
-                // VERSIONE SENZA DISTANZA
-                // if (tokens.length < 8)
+            if (tokens.length < numCols)
                 continue;
 
             try {
-                // NUOVA AGGIUNTA : DISTANZA
-                for (int i = 0; i < 12; i++) {
-
-                    // VERSIONE SENZA DISTANZA
-                    /* for (int i = 0; i < 8; i++) { */
+                for (int i = 0; i < numCols; i++) {
                     double val = Double.parseDouble(tokens[i]);
                     if (val < min[i])
                         min[i] = val;
@@ -110,7 +122,6 @@ public class DatasetLoader {
         return new double[][] { min, max };
     }
 
-    // 3. Salvataggio di min e max su file
     public static void salvaMinMaxSuFile(double[][] minMax) throws IOException {
         try (
                 BufferedWriter minWriter = new BufferedWriter(new FileWriter("min.txt"));
@@ -123,30 +134,21 @@ public class DatasetLoader {
     }
 
     public static double[][] loadMinMaxDaFile(String minPath, String maxPath) throws IOException {
-        /** NUOVA AGGIUNTA : DISTANZA */
-        double[] min = new double[12];
-        double[] max = new double[12];
-
-        /*
-         * double[] min = new double[8];
-         * double[] max = new double[8];
-         */
+        int numCols = IDX_GEAR + 1;
+        double[] min = new double[numCols];
+        double[] max = new double[numCols];
 
         BufferedReader minIn = new BufferedReader(new FileReader(minPath));
         BufferedReader maxIn = new BufferedReader(new FileReader(maxPath));
 
-        // NUOVA AGGIUNTA : DISTANZA
-        for (int i = 0; i < 12; i++) {
-
-            // VERSIONE SENZA DISTANZA
-            // for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < numCols; i++) {
             min[i] = Double.parseDouble(minIn.readLine());
             max[i] = Double.parseDouble(maxIn.readLine());
         }
+
         minIn.close();
         maxIn.close();
 
         return new double[][] { min, max };
     }
-
 }

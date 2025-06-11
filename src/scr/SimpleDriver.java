@@ -237,91 +237,71 @@ public class SimpleDriver extends Controller {
 			action.brake = 0;
 			action.clutch = clutch;
 			return action;
-		}
-
-		else // Auto non bloccata
-		{
+		} else { // Auto non bloccata
+			// Leggi i sensori una volta sola
+			double[] track = sensors.getTrackEdgeSensors();
 			double[] focus = sensors.getFocusSensors();
-			double[] rawInput = {
-					// Indicano la distanza in metri dal bordo della pista in una specifica
-					// direzione.
-					// AGGIUNTA DISTANZA
-					sensors.getDistanceFromStartLine(), // nuova prima feature
-					sensors.getTrackEdgeSensors()[5],
-					sensors.getTrackEdgeSensors()[7],
-					sensors.getTrackEdgeSensors()[9],
-					sensors.getTrackEdgeSensors()[11],
-					sensors.getTrackEdgeSensors()[13],
-					focus[1], // 6 – focus sinistra
-					focus[2], // 7 – focus centro
-					focus[3], // 8 – focus destra
-					// posizione della macchina rispetto alla carreggiata (centro pista = 0,
-					// sinistra -1, destra +1, > 1.0 fuori pista)
-					sensors.getTrackPosition(),
-					// angolo in radianti tra l'asse della macchina e l'asse della pista
-					sensors.getAngleToTrackAxis(),
-					// velocità della macchina in km/h
-					sensors.getSpeed()
-			};
 
-			// NUOVA AGGIUNTA DISTANZA
-			// double[] input = new double[9];
+			// Costruisci il rawInput usando gli stessi indici del DatasetLoader
+			double[] rawInput = new double[DatasetLoader.FEATURE_INDICES.length];
+			for (int i = 0; i < DatasetLoader.FEATURE_INDICES.length; i++) {
+				int idx = DatasetLoader.FEATURE_INDICES[i];
+				switch (idx) {
+					case DatasetLoader.IDX_DISTANCE -> rawInput[i] = sensors.getDistanceFromStartLine();
+					case DatasetLoader.IDX_TRACK3 -> rawInput[i] = track[3];
+					case DatasetLoader.IDX_TRACK4 -> rawInput[i] = track[4];
+					case DatasetLoader.IDX_TRACK5 -> rawInput[i] = track[5];
+					case DatasetLoader.IDX_TRACK6 -> rawInput[i] = track[6];
+					case DatasetLoader.IDX_TRACK7 -> rawInput[i] = track[7];
+					case DatasetLoader.IDX_TRACK8 -> rawInput[i] = track[8];
+					case DatasetLoader.IDX_TRACK9 -> rawInput[i] = track[9];
+					case DatasetLoader.IDX_TRACK10 -> rawInput[i] = track[10];
+					case DatasetLoader.IDX_TRACK11 -> rawInput[i] = track[11];
+					case DatasetLoader.IDX_TRACK12 -> rawInput[i] = track[12];
+					case DatasetLoader.IDX_TRACK13 -> rawInput[i] = track[13];
+					case DatasetLoader.IDX_TRACK14 -> rawInput[i] = track[14];
+					case DatasetLoader.IDX_TRACK15 -> rawInput[i] = track[15];
+					case DatasetLoader.IDX_TRACK16 -> rawInput[i] = track[16];
+					case DatasetLoader.IDX_FOCUS1 -> rawInput[i] = focus[1];
+					case DatasetLoader.IDX_FOCUS2 -> rawInput[i] = focus[2];
+					case DatasetLoader.IDX_FOCUS3 -> rawInput[i] = focus[3];
+					case DatasetLoader.IDX_TRACK_POS -> rawInput[i] = sensors.getTrackPosition();
+					case DatasetLoader.IDX_ANGLE -> rawInput[i] = sensors.getAngleToTrackAxis();
+					case DatasetLoader.IDX_SPEED -> rawInput[i] = sensors.getSpeed();
+					case DatasetLoader.IDX_SPEEDY -> rawInput[i] = sensors.getLateralSpeed();
+					case DatasetLoader.IDX_DAMAGE -> rawInput[i] = sensors.getDamage();
+					case DatasetLoader.IDX_DISTANCE_RACED -> rawInput[i] = sensors.getDistanceRaced();
+					case DatasetLoader.IDX_RPM -> rawInput[i] = sensors.getRPM();
+					default -> rawInput[i] = 0.0;
+				}
 
-			// VECCHIA VERSIONE SENZA DISTANZA
-			// double[] input = new double[8];
-
-			// DOPO AGGIUNTA DEI SENSORI
-			double[] input = new double[12];
-			for (int i = 0; i < 12; i++) {
-				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
 			}
 
-			// NUOVA AGGIUNTA DISTANZA
-			for (int i = 0; i < 12; i++) {
-				// VECCHIA VERSIONE SENZA DISTANZA
-				// for (int i = 0; i < 8; i++) {
+			// Normalizza
+			double[] input = new double[rawInput.length];
+			for (int i = 0; i < rawInput.length; i++) {
 				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
 			}
 
 			int gear = classifier.predictGear(input);
-
 			double steer = classifier.predictSteering(input);
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);
 
-			/* NUOVA AGGIUNTA */
+			// Smorza oscillazioni improvvise
+			if (Math.abs(steer - lastSteer) > 0.5)
+				steer = lastSteer;
 
-			// se il valore di sterzata predetto cambia troppo
-			// rispetto a quella di prima, proviamo a mantenere quello precedente
-			// Usa lastSteer anche se non fai log
-			if (Math.abs(steer - lastSteer) > 0.5) {
-				steer = lastSteer; // smorza
-			}
-
-			// Riduci accelerazione in curva
-			if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 40) {
-				accel *= 0.6;
-			}
-
-			// AGGIORNA SEMPRE I LAST, NON SOLO PER LOG
 			lastSteer = steer;
 			lastAccel = accel;
 			lastGear = gear;
 
-			/* CCOME PRIMA */
 			clutch = clutching(sensors, clutch);
 			long currentTime = System.currentTimeMillis();
-			double deltaTime = (currentTime - lastTime) / 1000.0; // in secondi
+			double deltaTime = (currentTime - lastTime) / 1000.0;
 			lastTime = currentTime;
 
 			boolean shouldLog = false;
-
-			// LOgging delle predizioni
-			// Controlla se è la prima volta che si registra l'input
-			// oppure se c'è una differenza significativa rispetto all'ultimo input
-			// Se è la prima volta, registra sempre
-			// Se c'è una differenza significativa, registra
-			// altrimenti non registra
 			if (lastRawInput == null) {
 				lastRawInput = new double[rawInput.length];
 				shouldLog = true;
@@ -332,7 +312,6 @@ public class SimpleDriver extends Controller {
 						break;
 					}
 				}
-
 				if (Math.abs(steer - lastSteer) > 0.01 || Math.abs(accel - lastAccel) > 0.01 || gear != lastGear) {
 					shouldLog = true;
 				}
@@ -341,58 +320,43 @@ public class SimpleDriver extends Controller {
 			if (shouldLog) {
 				try {
 					StringBuilder log = new StringBuilder();
-					log.append(stepCounter++).append(",");
-					log.append(currentTime).append(",");
-					log.append(deltaTime).append(",");
-
+					log.append(stepCounter++).append(",").append(currentTime).append(",").append(deltaTime).append(",");
 					for (double val : rawInput)
 						log.append(val).append(",");
 					for (double val : input)
 						log.append(val).append(",");
-
-					log.append(gear).append(",");
-					log.append(steer).append(",");
-					log.append(accel).append(",");
-					log.append(brake).append("\n");
+					log.append(gear).append(",").append(steer).append(",").append(accel).append(",").append(brake)
+							.append("\n");
 
 					logWriter.write(log.toString());
 					logWriter.flush();
-
 					System.arraycopy(rawInput, 0, lastRawInput, 0, rawInput.length);
-
-					/*
-					 * PRIMA STAVANO QUA
-					 * lastSteer = steer;
-					 * lastAccel = accel;
-					 * lastGear = gear;
-					 */
 
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
 
-			// Azione sempre eseguita, fuori dal blocco di logging
 			Action action = new Action();
 			action.gear = gear;
 			action.steering = steer;
 			action.accelerate = accel;
 			action.brake = brake;
 			action.clutch = clutch;
-			// Imposta il focus per guardare nella direzione della curva
+
 			if (Math.abs(steer) > 0.3) {
 				int dynamicFocus = (int) Math.round(steer * 90);
 				action.focus = Math.max(-90, Math.min(90, dynamicFocus));
 			} else {
 				action.focus = 0;
 			}
-			// Rallenta in curva per evitare derapate
+
 			if (Math.abs(sensors.getAngleToTrackAxis()) > 0.2 && sensors.getSpeed() > 30) {
 				accel *= 0.5;
 			}
+
 			return action;
 		}
-
 	}
 
 	private float filterABS(SensorModel sensors, float brake) {
