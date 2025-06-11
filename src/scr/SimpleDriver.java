@@ -285,7 +285,7 @@ public class SimpleDriver extends Controller {
 				input[i] = (max[i] != min[i]) ? (rawInput[i] - min[i]) / (max[i] - min[i]) : 0.0;
 			}
 
-			int gear = classifier.predictGear(input, sensors.getRPM(), sensors.getGear());
+			int gear = classifier.predictGear(input, sensors.getRPM(), sensors.getGear(), gearUp, gearDown);
 			double steer = classifier.predictSteering(input);
 			double accel = classifier.predictAccelerate(input);
 			double brake = classifier.predictBrake(input);

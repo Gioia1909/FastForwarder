@@ -24,7 +24,7 @@ public class KNNClassifier {
         return predictContinuous(input, "brake");
     }
 
-    public int predictGear(double[] input, double rpm, int currentGear) {
+    public int predictGear(double[] input, double rpm, int currentGear, int[] gearUp, int[] gearDown) {
         List<DataPoint> neighbors = tree.findKNearest(input, k);
 
         Map<Integer, Integer> gearVotes = new HashMap<>();
