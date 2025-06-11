@@ -15,6 +15,7 @@ public class ManualDriver extends Controller {
     private float steering = 0.0f;
     private double currentAccel = 0.0;
     private double currentBrake = 0.0;
+    private int stepCounter = 0;
 
     final int[] gearUp = { 5000, 6000, 6000, 6500, 7000, 0 };
     final int[] gearDown = { 0, 2500, 3000, 3000, 3500, 3500 };
@@ -70,6 +71,8 @@ public class ManualDriver extends Controller {
 
     @Override
     public Action control(SensorModel sensors) {
+        stepCounter++;
+
         Action action = new Action();
 
         updateState();
@@ -85,12 +88,15 @@ public class ManualDriver extends Controller {
         double distance = sensors.getDistanceFromStartLine();
 
         // Imposta il focus per attivare i sensori focus (obbligatorio)
-        if (Math.abs(steering) > 0.3) {
+        if (stepCounter < 5) {
+            action.focus = 60; // attivazione iniziale garantita
+        } else if (Math.abs(steering) > 0.3) {
             int dynamicFocus = (int) Math.round(steering * 90);
             action.focus = Math.max(-90, Math.min(90, dynamicFocus));
         } else {
             action.focus = 0;
         }
+
         // Scrivi nel CSV solo se recording è attivo
         if (recording) {
             long currentTime = System.currentTimeMillis();
